@@ -41,11 +41,11 @@ return [
 
         'mysql_prod' => [
             'driver'         => 'mysql',
-            'host'           => env('STACKHERO_MYSQL_HOST'),
+            'host'           => '2wxwot.stackhero-network.com',
             'port'           => 3306,
-            'username'       => env('STACKHERO_MYSQL_USER'),
-            'password'       => env('STACKHERO_MYSQL_PASSWORD'),
-            'database'       => env('STACKHERO_MYSQL_USER'),
+            'username'       => 'root',
+            'password'       => 'xhMScSS3EWY6hkrnM3eblLDo2v7Fkbif',
+            'database'       => 'fivem_panel',
             'charset'        => 'utf8mb4',
             'collation'      => 'utf8mb4_unicode_ci',
             'prefix'         => '',
