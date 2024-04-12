@@ -21,7 +21,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $this->discordService->setCode($request->get('code') ?? $request->code);
-        $this->discordService->setRedirect(isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] . '/api/auth' : config('discord.redirect_uri'));
+        $this->discordService->setRedirect(isset($request->redirect_to) ? $request->redirect_to . '/api/auth' : config('discord.redirect_uri'));
         $data = $this->discordService->auth();
 
         if ( !$data) {
