@@ -54,7 +54,7 @@ return [
             'engine'         => null,
             'sslmode'        => 'require',
             'options'        => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_CA => resource_path('certificates/isrgrootx1.pem'),
             ]) : [],
         ],
 
