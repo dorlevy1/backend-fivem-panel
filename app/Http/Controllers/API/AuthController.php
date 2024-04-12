@@ -24,6 +24,7 @@ class AuthController extends Controller
         $this->discordService->setRedirect(isset($request->redirect_to) ? $request->redirect_to . '/api/auth' : config('discord.redirect_uri'));
         $data = $this->discordService->auth();
 
+        return $data;
         if ( !$data) {
             return response()->json([
                 'message' => 'Unauthorized',
