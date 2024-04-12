@@ -89,7 +89,6 @@ class DiscordService
         try {
             $tokens = $this->apiRequest($this->tokenURL, $this->tokenData);
 
-            return $this->tokenData;
             $this->tokens = new AccessToken($tokens);
             if ($this->getUser()->id) {
                 return $this->discordRepository->getOrSave($this->getUser(), $this->tokens->getToken());
