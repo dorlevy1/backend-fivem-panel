@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('discord_id')->unique();
             $table->string('scopes');
             $table->timestamps();
-            $table->foreign('discord_id')->references('discord_id')->on('admins');
+            $table->foreign('discord_id')->references('discord_id')->on('users');
         });
 
 
