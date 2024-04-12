@@ -87,7 +87,6 @@ class DiscordService
     public function auth()
     {
         try {
-            dd($this->tokenURL, $this->tokenData);
             $tokens = $this->apiRequest($this->tokenURL, $this->tokenData);
             $this->tokens = new AccessToken($tokens);
             if ($this->getUser()->id) {
