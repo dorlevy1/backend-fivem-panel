@@ -22,7 +22,7 @@ class GangRepository
     public function inventory($gangName)
     {
         $inventory = DB::connection('second_db')->table('ox_inventory')->where('name', '=',
-            $gangName)->first() ?? [];
+            $gangName . '_storage')->first() ?? [];
 
         return !empty($inventory) ? json_decode($inventory->data) : [];
 
@@ -34,8 +34,11 @@ class GangRepository
 
         $gangs = [];
         foreach ($this->gangs->all() as $gang) {
-            $owner = Player::where('citizenid', '=', $gang->owner)->first();
 
+            $owner = Player::where('citizenid', '=', $gang->owner)->first();
+            if ( !$owner) {
+                continue;
+            }
             $gang->owner = $owner->charinfo->firstname . ' ' . $owner->charinfo->lastname . ' | ' . $gang->owner;
             $gang->zones = count(json_decode($gang->zones, 1));
             $gang->amountPlayers = count($gang->players);
