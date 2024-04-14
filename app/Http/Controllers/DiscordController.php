@@ -20,4 +20,19 @@ class DiscordController extends Controller
         $this->discordService->setCode($request->get('code'));
         $this->discordService->auth();
     }
+
+    public function getOnlinePlayers()
+    {
+        return $this->discordService->getOnlinePlayers();
+    }
+
+    public function getPlayerData(Request $request)
+    {
+        return $this->discordService->getPlayerData($request);
+    }
+
+    public function checkForOnlinePlayer(Request $request)
+    {
+        return $this->discordService->checkForOnlinePlayer($request);
+    }
 }

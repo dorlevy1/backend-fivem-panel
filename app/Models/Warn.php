@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Warn extends Model
 {
+
     use HasFactory;
-    protected $connection = 'second_db';
+
+    protected $fillable = ['discord', 'license', 'name', 'reason', 'warned_by', 'created_at', 'updated_at'];
 
 }

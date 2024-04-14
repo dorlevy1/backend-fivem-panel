@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Ban;
 use App\Services\BanService;
 use App\Services\PlayerService;
 use Illuminate\Http\Request;
@@ -10,7 +11,7 @@ use Illuminate\Http\Request;
 class BansController extends Controller
 {
 
-    private PlayerService $playerService;
+    private BanService $banService;
 
     public function __construct(BanService $banService)
     {

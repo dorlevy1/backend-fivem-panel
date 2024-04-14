@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\StringifyScope;
+use Illuminate\Database\Eloquent\Builder;
 
 class Player extends Model
 {
@@ -83,6 +84,16 @@ class Player extends Model
     public function ban(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Ban::class, 'citizenid');
+    }
+
+    public function scopeLastDay(Builder $query): Builder
+    {
+        return $query->whereDate('created_at', '>', now()->subHours(24));
+    }
+
+    public function scopeLastSevenDays(Builder $query): Builder
+    {
+        return $query->whereDate('created_at', '>', now()->subDays(7));
     }
 
 }

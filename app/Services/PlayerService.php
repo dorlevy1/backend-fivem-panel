@@ -22,6 +22,10 @@ class PlayerService
         return $this->playerRepository->getPlayers();
     }
 
+    public function getJoinedPlayers(): object
+    {
+        return $this->playerRepository->getJoinedPlayers();
+    }
     public function giveBan($citizenid)
     {
         return $this->playerRepository->giveBan($citizenid);

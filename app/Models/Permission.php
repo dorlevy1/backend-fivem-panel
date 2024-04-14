@@ -13,7 +13,12 @@ class Permission extends Model
 
     protected $table = 'permissions';
 
-    protected $fillable = ['discord_id', 'scopes'];
+    protected $fillable = [
+        'discord_id',
+        'scopes',
+        'created_at',
+        'updated_at'
+    ];
     protected $casts = [
         'permissions' => 'array',
     ];

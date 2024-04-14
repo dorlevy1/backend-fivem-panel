@@ -20,7 +20,14 @@ class User extends Authenticatable implements JWTSubject
      *
      * @var array<int, string>
      */
-    protected $fillable = ['discord_id', 'username', 'global_name', 'avatar'];
+    protected $fillable = [
+        'discord_id',
+        'username',
+        'global_name',
+        'avatar',
+        'created_at',
+        'updated_at'
+    ];
     protected $hidden = [
         'remember_token',
     ];

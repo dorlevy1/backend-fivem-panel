@@ -29,6 +29,14 @@ class PlayerRepository
         return $players;
     }
 
+    public function getJoinedPlayers(): object
+    {
+        $lastDay = $this->players->lastDay()->get();
+        $last7Days = $this->players->lastSevenDays()->get();
+
+        return (object)['last_day' => $lastDay, 'last_seven_days' => $last7Days];
+    }
+
 
     public function getPlayerByDiscord($discord = null)
     {

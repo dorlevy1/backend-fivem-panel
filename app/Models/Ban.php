@@ -11,9 +11,17 @@ class Ban extends Model
     use HasFactory;
 
     protected $connection = 'second_db';
-    protected $fillable = ['discord', 'license', 'expire', 'ip', 'bannedby', 'name', 'reason'];
-    const UPDATED_AT = null;
-    const CREATED_AT = null;
+    protected $fillable = [
+        'discord',
+        'license',
+        'expire',
+        'ip',
+        'bannedby',
+        'name',
+        'reason',
+        'created_at',
+        'updated_at'
+    ];
 
     public function player(): \Illuminate\Database\Eloquent\Relations\HasMany
     {

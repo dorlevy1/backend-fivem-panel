@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\PlayersController;
 use App\Http\Controllers\Admin\WarnsController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\DiscordController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -18,14 +19,14 @@ Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:ap
 
 Route::middleware(['auth:api'])->group(function () {
 
-    Route::post('isAuth', function () {
-    });
+    Route::post('/discord/players', [DiscordController::class, 'getOnlinePlayers']);
+    Route::post('/discord/checkOnline', [DiscordController::class, 'checkForOnlinePlayer']);
+    Route::post('/discord/playerData', [DiscordController::class, 'getPlayerData']);
 
-    Route::post('updatePermissions', function () {
-    });
 
     Route::prefix('players')->middleware(['auth:api'])->group(function () {
         Route::post('/get', [PlayersController::class, 'view']);
+        Route::post('/newPlayers', [PlayersController::class, 'getJoinedPlayers']);
         Route::post('/{citizenid}/inventory', [PlayersController::class, 'getInventory']);
         Route::post('/{citizenid}', [PlayersController::class, 'getPlayer']);
         Route::post('/update', [PlayersController::class, 'update']);
@@ -44,6 +45,9 @@ Route::middleware(['auth:api'])->group(function () {
     });
     Route::prefix('warns')->group(function () {
         Route::post('/', [WarnsController::class, 'view']);
+        Route::post('/add', [WarnsController::class, 'add']);
+        Route::post('/update', [WarnsController::class, 'update']);
+        Route::post('/remove', [WarnsController::class, 'delete']);
     });
 
     Route::prefix('admins_action')->group(function () {

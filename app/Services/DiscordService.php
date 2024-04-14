@@ -4,9 +4,10 @@
 namespace App\Services;
 
 use App\Helpers\AccessToken;
-use App\Models\User;
+use App\Helpers\API;
+use App\Models\Player;
 use App\Repositories\DiscordRepository;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Http\Request;
 use PHPUnit\Runner\ErrorException;
 
 class DiscordService
@@ -34,6 +35,7 @@ class DiscordService
     //User service constructor
     protected AccessToken|null $tokens;
     private DiscordRepository $discordRepository;
+    private $api;
 
     public function __construct(DiscordRepository $discordRepository)
     {
@@ -41,6 +43,7 @@ class DiscordService
         $this->tokenData['client_id'] = config('discord.client_id');
         $this->tokenData['client_secret'] = config('discord.client_secret');
         $this->tokenData['scope'] = config('discord.scopes');
+        $this->api = new API();
     }
 
     public function setCode($code): void
@@ -53,41 +56,11 @@ class DiscordService
         $this->tokenData['redirect_uri'] = $uri;
     }
 
-    private function apiRequest($url, $data, $token = null, $type = null, $json = null)
-    {
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        if ( !is_null($data) && is_null($json)) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-        } elseif ( !is_null($data) && $json) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        }
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-        $headers[] = 'Accept: application/json';
-        if ( !is_null($token) && is_null($type)) {
-            $headers[] = 'Authorization: Bearer ' . $token;
-        }
-        if ( !is_null($token) && !is_null($type)) {
-            $headers[] = 'Authorization: Bot ' . $token;
-        }
-
-
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-        $response = curl_exec($ch);
-
-        return json_decode($response);
-    }
-
-
-    //Handles oauth2 callback and returns access token
     public function auth()
     {
         try {
-            $tokens = $this->apiRequest($this->tokenURL, $this->tokenData);
+            $tokens = $this->api->apiRequest($this->tokenURL, $this->tokenData);
 
             $this->tokens = new AccessToken($tokens);
             if ($this->getUser()->id) {
@@ -103,7 +76,7 @@ class DiscordService
 
     private function getUser(): object
     {
-        $user = $this->apiRequest('https://discord.com/api/users/@me', null, $this->tokens->getToken());
+        $user = $this->api->apiRequest('https://discord.com/api/users/@me', null, $this->tokens->getToken());
 
         if ( !$user->mfa_enabled) {
             throw new ErrorException('You Must Enabled MFA Auth');
@@ -114,7 +87,7 @@ class DiscordService
 
     public function checkIfInGuild(): object|false
     {
-        $guilds = $this->apiRequest('https://discord.com/api/users/@me/guilds', null, $this->tokens->getToken());
+        $guilds = $this->api->apiRequest('https://discord.com/api/users/@me/guilds', null, $this->tokens->getToken());
 
         foreach ($guilds as $guild) {
             if ($guild->id === $this->guild_id) {
@@ -125,17 +98,75 @@ class DiscordService
         return false;
     }
 
-    public function types()
+    public function getOnlinePlayers()
     {
-        //            $members_in_guild = $this->apiRequest("https://discord.com/api/guilds/{$this->guild_id}/members?limit=100",
-        //                null,
-        //                env('DISCORD_BOT_TOKEN'), 'Bot');
-        //            $create_roll = $this->apiRequest("https://discord.com/api/guilds/{$this->guild_id}/roles", [
-        //                'name'        => 'D.D.L System Check Auto',
-        //                'color'       => '(255,255,0)',
-        //                'hoist'       => true,
-        //                'mentionable' => true,
-        //            ], env('DISCORD_BOT_TOKEN'), 'Bot');
-        //
+        $players = $this->api->apiRequest(env('FIVEM_IP') . '/players.json', null, null, 'get');
+        $playersA = [];
+        foreach ($players as $player) {
+            $p = ['playerData' => $player];
+            foreach ($player->identifiers as $identifier) {
+                if (str_contains($identifier, 'discord')) {
+                    $this->getPlayerDataGame($player->identifiers, $p);
+                    $playersA[] = $p;
+                }
+            }
+        }
+
+        return response()->json($playersA);
+    }
+
+    public function checkForOnlinePlayer(Request $request)
+    {
+        $players = $this->api->apiRequest(env('FIVEM_IP') . '/players.json', null, null, 'get');
+
+        foreach ($players as $player) {
+            if (array_search($request->discord, $player->identifiers)) {
+                return $player;
+            }
+        }
+
+        return false;
+    }
+
+    public function getPlayerData(Request $request)
+    {
+        $playerA = [];
+
+        if ( !$this->checkForOnlinePlayer($request)) {
+            return response()->json([
+                'player' => false
+            ]);
+        }
+        $playerA['playerData'] = $this->checkForOnlinePlayer($request);
+
+        return $this->getPlayerDataGame($playerA['playerData']->identifiers, $playerA);
+
+    }
+
+    private function getPlayerDataGame($identifiers, &$playerA)
+    {
+        foreach ($identifiers as $identifier) {
+            if (str_contains($identifier, 'fivem')) {
+
+                $playerB = $this->api->apiRequest(env('FIVEM_API') . env('FIVEM_KEY') . env('FIVEM_SEARCH') . str_replace('fivem:',
+                        '', $identifier),
+                    null,
+                    null, 'get');
+
+                $playerA['playerTime'] = $playerB[0]->seconds;
+            }
+
+            if (str_contains($identifier, 'discord')) {
+                foreach (Player::all() as $player) {
+                    if (str_contains($identifier, $player->metadata->discord)) {
+                        $playerA['playerDataGame'] = $player;
+                    }
+                }
+            }
+        }
+
+        return response()->json($playerA);
+
+
     }
 }

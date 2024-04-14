@@ -4,45 +4,43 @@
 namespace App\Repositories;
 
 use App\Models\Ban;
+use App\Models\Warn;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class BanRepository
+class WarnRepository
 {
 
-    protected Ban $bans;
+    protected Warn $warn;
 
-    public function __construct(Ban $bans)
+    public function __construct(Warn $warn)
     {
-        $this->bans = $bans;
+        $this->warn = $warn;
     }
 
-    public function getBans()
+    public function getWarns()
     {
-        return $this->bans->all();
+        return $this->warn->all();
     }
 
 
     public function add($data)
     {
 
-
-        $ban = Ban::create([
-            'discord'  => strval($data->player['metadata']['discord']),
-            'license'  => strval($data->player['license']),
-            'name'     => $data->player['name'],
-            'ip'       => (new Request())->ip(),
-            'reason'   => $data->res['reason'],
-            'expire'   => $data->res['date'],
-            'bannedby' => $data->res['admin']
+        $warn = Warn::create([
+            'discord'   => strval($data->player['metadata']['discord']),
+            'license'   => strval($data->player['license']),
+            'name'      => $data->player['name'],
+            'reason'    => $data->res['reason'],
+            'warned_by' => $data->res['admin']
         ]);
 
-        return $ban;
+        return $warn;
     }
 
     public function update($data)
     {
-        $ban = Ban::find($data->id);
+        $ban = Warn::find($data->id);
         if ( !$ban) {
             return (object)[
                 'success' => false,
@@ -60,7 +58,7 @@ class BanRepository
 
     public function delete($id)
     {
-        $ban = Ban::find($id);
+        $ban = Warn::find($id);
         if ( !$ban) {
             return (object)[
                 'success' => false,
