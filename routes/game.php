@@ -14,3 +14,4 @@ use Illuminate\Support\Facades\Session;
 
 
 Route::post('/playerConnecting', [PlayersController::class, 'playerConnecting']);
+Route::post('/playerDisconnect', [PlayersController::class, 'playerDisconnect']);

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Session;
 
 
 Route::get('test', function () {
-    $notify = new DatabaseChange('warnsUpdate', 'my-event');
+    $notify = new DatabaseChange('checkBinKa', 'my-event');
     $notify->send($notify);
     //    dd(event(new DatabaseChange('hello world')));
     dd('sad');

@@ -3,6 +3,7 @@
 
 namespace App\Repositories;
 
+use App\Events\DatabaseChange;
 use App\Models\Ban;
 use App\Models\Player;
 use App\Models\User;
@@ -13,9 +14,14 @@ class PlayerRepository
 
     protected Player $players;
 
+    public DatabaseChange $onlineNotify;
+    public DatabaseChange $notify;
+
     public function __construct(Player $players)
     {
         $this->players = $players;
+        $this->notify = new DatabaseChange('playersUpdate', 'my-event');
+        $this->onlineNotify = new DatabaseChange('onlinePlayersUpdate', 'my-event');
     }
 
     public function getPlayers()

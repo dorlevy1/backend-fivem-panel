@@ -22,9 +22,20 @@ class PlayerService
         return $this->playerRepository->getPlayers();
     }
 
-    public function playerConnecting($data)
+    public function playerConnecting($data): true
     {
-        return $data;
+        $this->playerRepository->onlineNotify->setData(json_decode($data));
+        $this->playerRepository->onlineNotify->send($this->playerRepository->onlineNotify);
+
+        return true;
+    }
+
+    public function playerDisconnect($data): true
+    {
+        $this->playerRepository->onlineNotify->setData(json_decode($data));
+        $this->playerRepository->onlineNotify->send($this->playerRepository->onlineNotify);
+
+        return true;
     }
 
     public function getJoinedPlayers(): object
