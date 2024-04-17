@@ -3,18 +3,20 @@
 
 namespace App\Repositories;
 
+use App\Events\DatabaseChange;
 use App\Models\Ban;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class BanRepository
 {
 
     protected Ban $bans;
+    protected DatabaseChange $notify;
 
     public function __construct(Ban $bans)
     {
         $this->bans = $bans;
+        $this->notify = new DatabaseChange('bansUpdate', 'my-event');
     }
 
     public function getBans()
@@ -36,7 +38,7 @@ class BanRepository
             'expire'   => $data->res['date'],
             'bannedby' => $data->res['admin']
         ]);
-
+        $this->sendSocket($this->bans->all());
         return $ban;
     }
 
@@ -69,10 +71,17 @@ class BanRepository
         }
         $ban->delete();
 
+
         return (object)[
             'success' => true,
             'message' => 'Ban Deleted Successfully'
         ];
+    }
+
+    private function sendSocket($data): void
+    {
+        $this->notify->setData($data);
+        $this->notify->send($this->notify);
     }
 
 }

@@ -14,7 +14,7 @@ return new class extends Migration {
         Schema::create('reports_chat', function (Blueprint $table) {
             $table->id();
             $table->foreignId('report_id');
-            $table->json('messages')->nullable();
+            $table->longText('messages')->nullable();
             $table->timestamps();
             $table->foreign('report_id')->references('id')->on('reports');
 

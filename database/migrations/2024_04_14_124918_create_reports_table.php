@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('citizen_id');
             $table->string('title');
             $table->text('description');
-            $table->string('claim_by');
+            $table->string('claim_by')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();
             $table->foreign('claim_by')->references('discord_id')->on('admins');

@@ -3,19 +3,20 @@
 
 namespace App\Repositories;
 
-use App\Models\Ban;
+use App\Events\DatabaseChange;
 use App\Models\Warn;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class WarnRepository
 {
 
     protected Warn $warn;
+    protected DatabaseChange $notify;
 
     public function __construct(Warn $warn)
     {
         $this->warn = $warn;
+        $this->notify = new DatabaseChange('warnsUpdate', 'my-event');
+
     }
 
     public function getWarns()
@@ -34,6 +35,9 @@ class WarnRepository
             'reason'    => $data->res['reason'],
             'warned_by' => $data->res['admin']
         ]);
+
+        $this->sendSocket($this->warn->all());
+
 
         return $warn;
     }
@@ -66,11 +70,18 @@ class WarnRepository
             ];
         }
         $ban->delete();
+        $this->sendSocket($this->warn->all());
 
         return (object)[
             'success' => true,
             'message' => 'Ban Deleted Successfully'
         ];
+    }
+
+    private function sendSocket($data): void
+    {
+        $this->notify->setData($data);
+        $this->notify->send($this->notify);
     }
 
 }

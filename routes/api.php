@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BansController;
 use App\Http\Controllers\Admin\GangsController;
 use App\Http\Controllers\Admin\PermissionsController;
 use App\Http\Controllers\Admin\PlayersController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\WarnsController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\API\AuthController;
@@ -59,5 +60,13 @@ Route::middleware(['auth:api'])->group(function () {
         Route::post('/add', [BansController::class, 'add']);
         Route::post('/update', [BansController::class, 'update']);
         Route::post('/remove', [BansController::class, 'delete']);
+    });
+
+    Route::prefix('reports')->group(function () {
+        Route::post('/get', [ReportController::class, 'view']);
+        Route::post('/add', [ReportController::class, 'add']);
+        Route::post('/update', [ReportController::class, 'update']);
+        Route::post('/claim', [ReportController::class, 'claim']);
+        Route::post('/remove', [ReportController::class, 'delete']);
     });
 });

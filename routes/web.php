@@ -1,14 +1,23 @@
 <?php
 
+use App\Events\DatabaseChange;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\DiscordController;
 use App\Models\Player;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
+
+Route::get('test', function () {
+    $notify = new DatabaseChange('warnsUpdate', 'my-event');
+    $notify->send($notify);
+    //    dd(event(new DatabaseChange('hello world')));
+    dd('sad');
+});
 
 
 Route::get('/', function (Request $request) {
