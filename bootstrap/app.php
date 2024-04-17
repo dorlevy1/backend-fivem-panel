@@ -10,7 +10,8 @@ return Application::configure(basePath: dirname(__DIR__))
                       using: function () {
                           Route::prefix('api')
                                ->group(base_path('routes/api.php'));
-
+                          Route::prefix('game')
+                               ->group(base_path('routes/game.php'));
                           Route::middleware('web')
                                ->group(base_path('routes/web.php'));
                       },
