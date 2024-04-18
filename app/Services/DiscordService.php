@@ -101,12 +101,6 @@ class DiscordService
     public function getOnlinePlayers(): \Illuminate\Http\JsonResponse
     {
         $players = $this->api->apiRequest(env('FIVEM_IP') . '/players.json', null, null, 'get');
-        $playersA = [];
-//        foreach ($players as $player) {
-//            $p = ['playerData' => $player];
-//            $this->getPlayerDataGame($player->identifiers, $p);
-//            $playersA[] = $p;
-//        }
 
         return response()->json($players);
     }
