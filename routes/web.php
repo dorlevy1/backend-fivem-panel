@@ -14,9 +14,14 @@ use Illuminate\Support\Facades\Session;
 
 Route::get('test', function () {
     $notify = new DatabaseChange('checkBinKa', 'my-event');
+    $notify->setData([
+        'type' => 'ANNOUNCE',
+        'message' => 'This is message from backserver panel localhost',
+        'timeout' => 10000
+    ]);
     $notify->send($notify);
     //    dd(event(new DatabaseChange('hello world')));
-    dd('sad');
+    dd($notify->send($notify));
 });
 
 
@@ -29,7 +34,7 @@ Route::redirect('/login', 'https://discord.com/oauth2/authorize?client_id=' . co
     . '&redirect_uri=' . config('discord.redirect_uri')
     . '&response_type=code&scope=' . implode('%20', explode('+', config('discord.scopes')))
     . '&prompt=' . config('config.prompt', 'none'))
-     ->name('login');
+    ->name('login');
 
 
 Route::post('/refresh-token', [AuthController::class, 'refresh'])->name('discord.refresh_token');
