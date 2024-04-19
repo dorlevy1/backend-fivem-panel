@@ -53,9 +53,9 @@ class PermissionsRepository
 
         if ($exists) {
             $pendingExists = PendingPermission::where('discord_id', '=',
-                str_replace('discord:', '', $data->player['metadata']['discord']));
+                str_replace('discord:', '', $data->player['metadata']['discord']))->first();
             $permissionExists = Permission::where('discord_id', '=',
-                str_replace('discord:', '', $data->player['metadata']['discord']));
+                str_replace('discord:', '', $data->player['metadata']['discord']))->first();
 
             if ($permissionExists) {
 
