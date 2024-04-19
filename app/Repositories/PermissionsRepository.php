@@ -82,25 +82,21 @@ class PermissionsRepository
             }
 
             if ( !$pendingExists && !$permissionExists) {
-                $permissions = PendingPermission::firstOrCreate([
-                    'discord_id' => str_replace('discord:', '', $data->player['metadata']['discord']),
-                    'scopes'     => 'staff'
-                ]);
-
-                $this->notify->setData([
-                    'permissions' => $this->all()[0],
-                    'pending'     => $this->all()[1]
-                ]);
-                $this->notify->send($this->notify);
-
-
-                return response()->json([
-                    'user'    => $permissions,
-                    'message' => 'Admin Added to Pending Permissions'
-                ]);
+                return $this->pendingCreate($data);
             }
         }
 
+        return $this->pendingCreate($data);
+
+    }
+
+    /**
+     * @param $data
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function pendingCreate($data): \Illuminate\Http\JsonResponse
+    {
         $permissions = PendingPermission::firstOrCreate([
             'discord_id' => str_replace('discord:', '', $data->player['metadata']['discord']),
             'scopes'     => 'staff'
@@ -116,6 +112,5 @@ class PermissionsRepository
             'user'    => $permissions,
             'message' => 'Admin Added to Pending Permissions'
         ]);
-
     }
 }

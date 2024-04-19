@@ -19,10 +19,10 @@ class DiscordRepository
 
     public function getOrSave($userData, $token)
     {
-        $pending_permissions = PendingPermission::where('discord_id', '=', strval($userData->id));
-        $permissions = Permission::where('discord_id', '=', strval($userData->id));
+        $pending_permissions = PendingPermission::where('discord_id', '=', strval($userData->id))->first();
+        $permissions = Permission::where('discord_id', '=', strval($userData->id))->first();
 
-        if (empty($pending_permissions) && empty($permissions)) {
+        if ( !$pending_permissions && !$permissions) {
             return (object)[
                 [
                     'message' => 'Unauthorized',
@@ -43,14 +43,10 @@ class DiscordRepository
             ]);
         $admin->update(['remember_token' => $token]);
 
-
-        $pending_permissions = PendingPermission::where('discord_id', '=', strval($userData->id));
-        $permissions = Permission::where('discord_id', '=', strval($userData->id));
-
-        if ( !empty($pending_permissions->get()) && empty($permissions)) {
+        if ($pending_permissions && !$permissions) {
             Permission::create([
-                'discord_id' => $pending_permissions->get()[0]->discord_id,
-                'scopes'     => $pending_permissions->get()[0]->scopes
+                'discord_id' => $pending_permissions->discord_id,
+                'scopes'     => $pending_permissions->scopes
             ]);
             $pending_permissions->delete();
         }

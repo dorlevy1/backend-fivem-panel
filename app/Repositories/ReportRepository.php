@@ -6,6 +6,7 @@ namespace App\Repositories;
 use App\Events\DatabaseChange;
 use App\Models\Ban;
 use App\Models\Report;
+use App\Models\ReportChat;
 use App\Models\Warn;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,7 +36,7 @@ class ReportRepository
     public function add($data)
     {
 
-        $warn = Report::create([
+        $report = Report::create([
             'discord'   => strval($data->player['metadata']['discord']),
             'license'   => strval($data->player['license']),
             'name'      => $data->player['name'],
@@ -43,7 +44,9 @@ class ReportRepository
             'warned_by' => $data->res['admin']
         ]);
 
-        return $warn;
+        $report->report_chat->create();
+
+        return $report;
     }
 
     public function update($data)

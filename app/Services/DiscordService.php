@@ -60,9 +60,8 @@ class DiscordService
     public function login($data)
     {
         $this->setCode($data->get('code') ?? $data->code);
-        $this->setRedirect(isset($data->redirect_to) ? $data->redirect_to : config('discord.redirect_uri'));
+        $this->setRedirect($data->redirect_to ?? config('discord.redirect_uri'));
         $authUser = $this->auth();
-
         return $this->discordRepository->login($authUser);
     }
 
