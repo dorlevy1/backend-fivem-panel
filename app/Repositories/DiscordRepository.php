@@ -19,6 +19,16 @@ class DiscordRepository
 
     public function getOrSave($userData, $token)
     {
+        $pending_permissions = PendingPermission::where('discord_id', '=', strval($userData->id));
+        $permissions = Permission::where('discord_id', '=', strval($userData->id));
+
+        if (empty($pending_permissions) && empty($permissions)) {
+            return response()->json([
+                'message' => 'Unauthorized',
+                'success' => false
+            ], 401);
+        }
+
         $admin = Admin::firstOrCreate(
             [
                 'discord_id' => strval($userData->id),
@@ -43,6 +53,8 @@ class DiscordRepository
             $pending_permissions->delete();
         }
 
-        return (object)['admin' => $admin];
+        return response()->json([
+            'admin' => $admin,
+        ]);
     }
 }
