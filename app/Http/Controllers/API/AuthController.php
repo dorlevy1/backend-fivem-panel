@@ -20,33 +20,7 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $this->discordService->setCode($request->get('code') ?? $request->code);
-        $this->discordService->setRedirect(isset($request->redirect_to) ? $request->redirect_to : config('discord.redirect_uri'));
-        $data = $this->discordService->auth();
-
-        if ( !$data) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
-        }
-
-
-        $token = auth()->attempt(['discord_id' => $data->admin->discord_id]);
-
-        if ( !$token) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
-        }
-
-        return response()->json([
-            'user'          => auth()->user(),
-            'permissions'   => auth()->user()->permissions,
-            'authorization' => [
-                'token' => $token,
-                'type'  => 'bearer',
-            ]
-        ]);
+        return $this->discordService->login($request);
     }
 
     public function logout()

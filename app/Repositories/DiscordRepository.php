@@ -23,10 +23,12 @@ class DiscordRepository
         $permissions = Permission::where('discord_id', '=', strval($userData->id));
 
         if (empty($pending_permissions) && empty($permissions)) {
-            return response()->json([
-                'message' => 'Unauthorized',
-                'success' => false
-            ], 401);
+            return (object)[
+                [
+                    'message' => 'Unauthorized',
+                    'success' => false
+                ]
+            ];
         }
 
         $admin = Admin::firstOrCreate(
@@ -53,8 +55,35 @@ class DiscordRepository
             $pending_permissions->delete();
         }
 
+        return (object)['admin' => $admin];
+    }
+
+
+    public function login($data)
+    {
+
+        if ( !$data) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $token = auth()->attempt(['discord_id' => $data->admin->discord_id]);
+
+        if ( !$token) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
         return response()->json([
-            'admin' => $admin,
+            'user'          => auth()->user(),
+            'permissions'   => auth()->user()->permissions,
+            'authorization' => [
+                'token' => $token,
+                'type'  => 'bearer',
+            ]
         ]);
+
     }
 }
