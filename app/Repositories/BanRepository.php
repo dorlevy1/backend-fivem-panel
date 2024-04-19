@@ -12,11 +12,13 @@ class BanRepository
 
     protected Ban $bans;
     protected DatabaseChange $notify;
+    protected DatabaseChange $banNotify;
 
     public function __construct(Ban $bans)
     {
         $this->bans = $bans;
         $this->notify = new DatabaseChange('bansUpdate', 'my-event');
+        $this->banNotify = new DatabaseChange('playerBans.' . $this->bans->id, 'my-event');
     }
 
     public function getBans()
@@ -39,6 +41,10 @@ class BanRepository
             'bannedby' => $data->res['admin']
         ]);
         $this->sendSocket($this->bans->all());
+
+        $this->banNotify->setData($ban);
+        $this->banNotify->send($this->banNotify);
+
         return $ban;
     }
 

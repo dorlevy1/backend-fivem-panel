@@ -18,7 +18,7 @@ class AdminService
         $this->adminRepository = $adminRepository;
     }
 
-    public function checkForPermissions($data)
+    public function checkForPermissions($data): \Illuminate\Http\JsonResponse
     {
         return $this->adminRepository->checkForPermissions($data);
     }

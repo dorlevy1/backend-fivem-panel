@@ -19,7 +19,6 @@ class DiscordRepository
 
     public function getOrSave($userData, $token)
     {
-
         $admin = Admin::firstOrCreate(
             [
                 'discord_id' => strval($userData->id),
@@ -34,8 +33,9 @@ class DiscordRepository
 
 
         $pending_permissions = PendingPermission::where('discord_id', '=', strval($userData->id));
+        $permissions = Permission::where('discord_id', '=', strval($userData->id));
 
-        if (empty($pending_permissions->get())) {
+        if ( !empty($pending_permissions->get()) && empty($permissions)) {
             Permission::create([
                 'discord_id' => $pending_permissions->get()[0]->discord_id,
                 'scopes'     => $pending_permissions->get()[0]->scopes

@@ -16,12 +16,14 @@ class PlayerRepository
 
     public DatabaseChange $onlineNotify;
     public DatabaseChange $notify;
+    public DatabaseChange $warnNotify;
 
     public function __construct(Player $players)
     {
         $this->players = $players;
         $this->notify = new DatabaseChange('playersUpdate', 'my-event');
         $this->onlineNotify = new DatabaseChange('onlinePlayersUpdate', 'my-event');
+        $this->warnNotify = new DatabaseChange('playerWarns.' . $this->players->id, 'my-event');
     }
 
     public function getPlayers()
@@ -31,6 +33,9 @@ class PlayerRepository
             $player->name = iconv("UTF-8", "UTF-8//IGNORE", $player->name);
             $players[] = $player;
         }
+
+        $this->warnNotify->setData(['test' => 'dor']);
+        $this->warnNotify->send($this->warnNotify);
 
         return $players;
     }

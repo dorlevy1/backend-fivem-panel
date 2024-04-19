@@ -22,8 +22,9 @@ class PermissionsController extends Controller
         return $this->permissionsService->get();
     }
 
-    public function addPlayer($discord_id)
+    public function addPlayer(Request $request)
     {
+        return $this->permissionsService->addPlayer($request);
     }
 
     public function show($discord_id)

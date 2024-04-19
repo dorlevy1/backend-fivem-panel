@@ -25,30 +25,15 @@ class AdminRepository
         $this->onlineNotify = new DatabaseChange('onlinePlayersUpdate', 'my-event');
     }
 
-    public function checkForPermissions($data)
+    public function checkForPermissions(): \Illuminate\Http\JsonResponse
     {
 
-        $token = auth()->attempt(['discord_id' => '604330997630238726']);
-
-        if ($token && Auth::check()) {
-            if (is_null(auth()->user()->permissions)) {
-
-                return response()->json([
-                    'message' => 'Unauthorized',
-                ], 401);
-            }
-            $permissions = explode(',', json_decode(auth()->user()->permissions)->scopes);
-
-            if (in_array('staff', $permissions) || in_array('*', $permissions)) {
-                return response()->json([
-                    'user' => auth()->user(),
-                    'authorization' => [
-                        'token' => $token,
-                        'type' => 'bearer',
-                    ]
-                ]);
-            }
+        if (Auth::check()) {
+            return response()->json([
+                'permissions' => auth()->user()->permissions,
+            ]);
         }
+
         return response()->json([
             'message' => 'Unauthorized',
         ], 401);

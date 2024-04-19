@@ -15,7 +15,7 @@ class AdminController extends Controller
         $this->adminService = $adminService;
     }
 
-    public function checkForPermissions(Request $request)
+    public function checkForPermissions(Request $request): \Illuminate\Http\JsonResponse
     {
         return $this->adminService->checkForPermissions($request);
     }

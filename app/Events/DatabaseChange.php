@@ -4,6 +4,7 @@ namespace App\Events;
 
 use AllowDynamicProperties;
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -21,10 +22,11 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
     public mixed $dataDB;
     public mixed $name;
 
-    public function __construct($name, $event)
+    public function __construct($name, $event, $private = false)
     {
         $this->name = $name;
         $this->event = $event;
+        $this->private = $private;
         $this->dataDB = [];
     }
 
@@ -44,7 +46,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
     public function broadcastOn(): Channel
     {
 
-        return new Channel($this->name);
+        return $this->private ? new PrivateChannel($this->name) : new Channel($this->name);
     }
 
     public function send($notification): \Illuminate\Broadcasting\PendingBroadcast

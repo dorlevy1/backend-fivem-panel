@@ -11,11 +11,13 @@ class WarnRepository
 
     protected Warn $warn;
     protected DatabaseChange $notify;
+    protected DatabaseChange $warnNotify;
 
     public function __construct(Warn $warn)
     {
         $this->warn = $warn;
         $this->notify = new DatabaseChange('warnsUpdate', 'my-event');
+        $this->warnNotify = new DatabaseChange('playerWarns.' . $this->warn->id, 'my-event');
 
     }
 
@@ -36,7 +38,10 @@ class WarnRepository
             'warned_by' => $data->res['admin']
         ]);
 
-        $this->sendSocket($this->warn->all());
+        $this->warnNotify->setData($warn);
+        $this->warnNotify->send($this->warnNotify);
+
+        $this->sendSocket($warn);
 
 
         return $warn;

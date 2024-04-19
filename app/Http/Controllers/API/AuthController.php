@@ -41,6 +41,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user'          => auth()->user(),
+            'permissions'   => auth()->user()->permissions,
             'authorization' => [
                 'token' => $token,
                 'type'  => 'bearer',

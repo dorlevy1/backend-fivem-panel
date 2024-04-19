@@ -17,8 +17,14 @@ Route::post('auth', [AuthController::class, 'login']);
 Route::post('/checkAuth', [AuthController::class, 'checkAuth']);
 Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
 
+Route::post('/broadcasting/auth', function () {
+    return ['dor'];
+
+    return auth()->check() ? auth()->user() : abort(403);
+});
 
 Route::middleware(['auth:api'])->group(function () {
+    Route::post('/checkPermissions', [AdminController::class, 'checkForPermissions']);
 
     Route::post('/discord/players', [DiscordController::class, 'getOnlinePlayers']);
     Route::post('/discord/checkOnline', [DiscordController::class, 'checkForOnlinePlayer']);

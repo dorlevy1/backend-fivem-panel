@@ -63,8 +63,10 @@ class DiscordService
             $tokens = $this->api->apiRequest($this->tokenURL, $this->tokenData);
 
             $this->tokens = new AccessToken($tokens);
-            if ($this->getUser()->id) {
-                return $this->discordRepository->getOrSave($this->getUser(), $this->tokens->getToken());
+
+            $userData = $this->getUser();
+            if ($userData->id) {
+                return $this->discordRepository->getOrSave($userData, $this->tokens->getToken());
             }
 
             return false;
@@ -74,23 +76,32 @@ class DiscordService
         }
     }
 
-    private function getUser(): object
+    private function getUser()
     {
-        $user = $this->api->apiRequest('https://discord.com/api/users/@me', null, $this->tokens->getToken());
 
-        if ( !$user->mfa_enabled) {
-            throw new ErrorException('You Must Enabled MFA Auth');
+        try {
+            $user = $this->api->apiRequest('https://discord.com/api/users/@me', null, $this->tokens->getToken());
+
+            if ( !$user->mfa_enabled) {
+                throw new ErrorException('You Must Enabled MFA Auth');
+            }
+
+            return $this->checkIfInGuild() ? $user : false;
+
+        } catch (\ErrorException $e) {
+            return $e->getMessage();
         }
 
-        return $user;
     }
 
-    public function checkIfInGuild(): object|false
+
+    public function checkIfInGuild()
     {
+
         $guilds = $this->api->apiRequest('https://discord.com/api/users/@me/guilds', null, $this->tokens->getToken());
 
         foreach ($guilds as $guild) {
-            if ($guild->id === $this->guild_id) {
+            if (isset($guild->id) && $guild->id === $this->guild_id) {
                 return $guild;
             }
         }

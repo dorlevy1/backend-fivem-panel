@@ -20,4 +20,9 @@ class PermissionsService
     {
         return $this->permissionsRepository->get();
     }
+
+    public function addPlayer($data)
+    {
+        return $this->permissionsRepository->addPlayer($data);
+    }
 }
