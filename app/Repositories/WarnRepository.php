@@ -17,8 +17,6 @@ class WarnRepository
     {
         $this->warn = $warn;
         $this->notify = new DatabaseChange('warnsUpdate', 'my-event');
-        $this->warnNotify = new DatabaseChange('playerWarns.' . $this->warn->id, 'my-event');
-
     }
 
     public function getWarns()
@@ -37,7 +35,7 @@ class WarnRepository
             'reason'    => $data->res['reason'],
             'warned_by' => $data->res['admin']
         ]);
-
+        $this->warnNotify = new DatabaseChange('playerWarns.' . $this->player->id, 'my-event');
         $this->warnNotify->setData($warn);
         $this->warnNotify->send($this->warnNotify);
 
