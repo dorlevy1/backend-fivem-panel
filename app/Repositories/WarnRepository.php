@@ -11,12 +11,13 @@ class WarnRepository
 
     protected Warn $warn;
     protected DatabaseChange $notify;
-    protected DatabaseChange $warnNotify;
+    protected DatabaseChange $inGameNotify;
 
     public function __construct(Warn $warn)
     {
         $this->warn = $warn;
         $this->notify = new DatabaseChange('warnsUpdate', 'my-event');
+        $this->inGameNotify = new DatabaseChange('inGame', 'my-event');
     }
 
     public function getWarns()
@@ -35,9 +36,12 @@ class WarnRepository
             'reason'    => $data->res['reason'],
             'warned_by' => $data->res['admin']
         ]);
-        $this->warnNotify = new DatabaseChange('playerWarns.' . $data->player['id'], 'my-event');
-        $this->warnNotify->setData($warn);
-        $this->warnNotify->send($this->warnNotify);
+
+        $this->inGameNotify->setData([
+            'type' => 'warn',
+            'data' => $warn
+        ]);
+        $this->inGameNotify->send($this->inGameNotify);
 
         $this->sendSocket($warn);
 
