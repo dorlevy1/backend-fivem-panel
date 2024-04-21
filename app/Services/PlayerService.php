@@ -30,7 +30,7 @@ class PlayerService
 
     public function playerConnecting($data): true
     {
-        
+
         $this->connectingNotify->setData($data);
         $this->connectingNotify->send($this->connectingNotify);
 
@@ -39,7 +39,7 @@ class PlayerService
 
     public function playerDisconnect($data): true
     {
-        $this->disconnectNotify->setData(json_decode($data));
+        $this->disconnectNotify->setData($data);
         $this->disconnectNotify->send($this->disconnectNotify);
 
         return true;
