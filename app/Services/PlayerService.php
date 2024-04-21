@@ -30,7 +30,8 @@ class PlayerService
 
     public function playerConnecting($data): true
     {
-        $this->connectingNotify->setData(json_decode($data));
+        
+        $this->connectingNotify->setData($data);
         $this->connectingNotify->send($this->connectingNotify);
 
         return true;
