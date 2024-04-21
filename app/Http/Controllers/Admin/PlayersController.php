@@ -23,6 +23,7 @@ class PlayersController extends Controller
 
     public function playerConnecting(Request $request): true
     {
+
         return $this->playerService->playerConnecting($request);
     }
 
