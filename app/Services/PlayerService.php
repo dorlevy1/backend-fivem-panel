@@ -3,6 +3,7 @@
 
 namespace App\Services;
 
+use App\Events\DatabaseChange;
 use App\Helpers\AccessToken;
 use App\Repositories\PlayerRepository;
 use PHPUnit\Runner\ErrorException;
@@ -11,10 +12,15 @@ class PlayerService
 {
 
     private PlayerRepository $playerRepository;
+    private DatabaseChange $connectingNotify;
+    private DatabaseChange $disconnectNotify;
 
     public function __construct(PlayerRepository $playerRepository)
     {
         $this->playerRepository = $playerRepository;
+        $this->connectingNotify = new DatabaseChange('onlinePlayersUpdate', 'connecting');
+        $this->disconnectNotify = new DatabaseChange('onlinePlayersUpdate', 'disconnect');
+
     }
 
     public function getPlayers()
@@ -24,16 +30,16 @@ class PlayerService
 
     public function playerConnecting($data): true
     {
-        $this->playerRepository->onlineNotify->setData(json_decode($data));
-        $this->playerRepository->onlineNotify->send($this->playerRepository->onlineNotify);
+        $this->connectingNotify->setData(json_decode($data));
+        $this->connectingNotify->send($this->connectingNotify);
 
         return true;
     }
 
     public function playerDisconnect($data): true
     {
-        $this->playerRepository->onlineNotify->setData(json_decode($data));
-        $this->playerRepository->onlineNotify->send($this->playerRepository->onlineNotify);
+        $this->disconnectNotify->setData(json_decode($data));
+        $this->disconnectNotify->send($this->disconnectNotify);
 
         return true;
     }

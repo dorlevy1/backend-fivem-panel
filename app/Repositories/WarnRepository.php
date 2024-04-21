@@ -4,6 +4,7 @@
 namespace App\Repositories;
 
 use App\Events\DatabaseChange;
+use App\Models\Player;
 use App\Models\Warn;
 
 class WarnRepository
@@ -17,12 +18,16 @@ class WarnRepository
     {
         $this->warn = $warn;
         $this->notify = new DatabaseChange('warnsUpdate', 'my-event');
-        $this->inGameNotify = new DatabaseChange('inGame', 'my-event');
     }
 
     public function getWarns()
     {
         return $this->warn->all();
+    }
+
+    private function updateInGameNotify($name): void
+    {
+        $this->inGameNotify = new DatabaseChange($name, 'my-event');
     }
 
 
@@ -36,14 +41,17 @@ class WarnRepository
             'reason'    => $data->res['reason'],
             'warned_by' => $data->res['admin']
         ]);
+        $this->updateInGameNotify('inGame.' . Player::where('license', '=',
+                strval($data->player['license']))->first()->id);
 
         $this->inGameNotify->setData([
-            'type' => 'warn',
-            'data' => $warn
+            'type'    => 'WARN',
+            'message' => $data->res['reason'],
+            'timeout' => 10000,
         ]);
         $this->inGameNotify->send($this->inGameNotify);
 
-        $this->sendSocket($warn);
+        $this->sendSocket($this->getWarns());
 
 
         return $warn;

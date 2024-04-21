@@ -14,7 +14,6 @@ class PlayerRepository
 
     protected Player $players;
 
-    public DatabaseChange $onlineNotify;
     public DatabaseChange $notify;
     public DatabaseChange $warnNotify;
 
@@ -22,7 +21,6 @@ class PlayerRepository
     {
         $this->players = $players;
         $this->notify = new DatabaseChange('playersUpdate', 'my-event');
-        $this->onlineNotify = new DatabaseChange('onlinePlayersUpdate', 'my-event');
         $this->warnNotify = new DatabaseChange('playerWarns.' . $this->players->id, 'my-event');
     }
 

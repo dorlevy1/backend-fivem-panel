@@ -5,6 +5,7 @@ namespace App\Repositories;
 
 use App\Events\DatabaseChange;
 use App\Models\Ban;
+use App\Models\Player;
 use Illuminate\Http\Request;
 
 class BanRepository
@@ -12,20 +13,22 @@ class BanRepository
 
     protected Ban $bans;
     protected DatabaseChange $notify;
-    protected DatabaseChange $banNotify;
+    protected DatabaseChange $inGameNotify;
 
     public function __construct(Ban $bans)
     {
         $this->bans = $bans;
         $this->notify = new DatabaseChange('bansUpdate', 'my-event');
-        $this->banNotify = new DatabaseChange('playerBans.' . $this->bans->id, 'my-event');
     }
 
     public function getBans()
     {
         return $this->bans->all();
     }
-
+    private function updateInGameNotify($name): void
+    {
+        $this->inGameNotify = new DatabaseChange($name, 'my-event');
+    }
 
     public function add($data)
     {
@@ -40,10 +43,20 @@ class BanRepository
             'expire'   => $data->res['date'],
             'bannedby' => $data->res['admin']
         ]);
+
+        $this->updateInGameNotify('inGame.' . Player::where('license', '=',
+                strval($data->player['license']))->first()->id);
+
+        $this->inGameNotify->setData([
+            'type'    => 'BAN',
+            'message' => $data->res['reason'],
+            'timeout' => 10000,
+            'banUntil'=> strtotime($data->res['date'])
+
+        ]);
+        $this->inGameNotify->send($this->inGameNotify);
         $this->sendSocket($this->bans->all());
 
-        $this->banNotify->setData($ban);
-        $this->banNotify->send($this->banNotify);
 
         return $ban;
     }

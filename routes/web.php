@@ -13,11 +13,15 @@ use Illuminate\Support\Facades\Session;
 
 
 Route::get('test', function () {
-    $this->warnNotify = new DatabaseChange('playerWarns.179735', 'my-event');
-    $this->warnNotify->setData(['test' => 'dor']);
-    $this->warnNotify->send($this->warnNotify);
-    //    dd(event(new DatabaseChange('hello world')));
-    dd($this->warnNotify->send($this->warnNotify));
+    $this->inGameNotify = new DatabaseChange('inGame.1', 'my-event');
+
+    $this->inGameNotify->setData([
+        'type'    => 'KICK',
+        'message' => 'Test',
+        'timeout' => 5000,
+        'banUntil'=> 2147483647
+    ]);
+    dd($this->inGameNotify->send($this->inGameNotify));
 });
 
 
