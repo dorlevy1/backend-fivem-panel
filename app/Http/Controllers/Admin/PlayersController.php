@@ -23,14 +23,13 @@ class PlayersController extends Controller
 
     public function playerConnecting(Request $request)
     {
-        return $request->player;
 
-        return $this->playerService->playerConnecting(json_decode($request));
+        return $this->playerService->playerConnecting($request);
     }
 
     public function playerDisconnect(Request $request): true
     {
-        return $this->playerService->playerDisconnect(json_decode($request));
+        return $this->playerService->playerDisconnect($request);
     }
 
     public function getJoinedPlayers(): object
