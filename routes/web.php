@@ -13,13 +13,12 @@ use Illuminate\Support\Facades\Session;
 
 
 Route::get('test', function () {
-    $this->inGameNotify = new DatabaseChange('inGame.1', 'my-event');
+    $this->inGameNotify = new DatabaseChange('inGame.215978', 'my-event');
 
     $this->inGameNotify->setData([
         'type'    => 'KICK',
-        'message' => 'Test',
-        'timeout' => 5000,
-        'banUntil'=> 2147483647
+        'message' => 'test',
+        'timeout' => 10000,
     ]);
     dd($this->inGameNotify->send($this->inGameNotify));
 });

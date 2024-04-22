@@ -41,6 +41,7 @@ class WarnRepository
             'reason'    => $data->res['reason'],
             'warned_by' => $data->res['admin']
         ]);
+
         $this->updateInGameNotify('inGame.' . Player::where('license', '=',
                 strval($data->player['license']))->first()->id);
 

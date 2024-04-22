@@ -16,13 +16,13 @@ class Player extends Model
     protected $connection = 'second_db';
 
 
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        //Any time this model is used, it will implement the StringifyGuidRule
-        static::addGlobalScope(new StringifyScope());
-    }
+//    protected static function boot(): void
+//    {
+////        parent::boot();
+//
+//        //Any time this model is used, it will implement the StringifyGuidRule
+////        static::addGlobalScope(new StringifyScope());
+//    }
 
     public function inventory(): Attribute
     {

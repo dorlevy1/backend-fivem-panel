@@ -26,16 +26,7 @@ class PlayerRepository
 
     public function getPlayers()
     {
-        $players = [];
-        foreach ($this->players->all() as $player) {
-            $player->name = iconv("UTF-8", "UTF-8//IGNORE", $player->name);
-            $players[] = $player;
-        }
-
-        $this->warnNotify->setData(['test' => 'dor']);
-        $this->warnNotify->send($this->warnNotify);
-
-        return $players;
+        return $this->players->all();
     }
 
     public function getJoinedPlayers(): object
@@ -62,8 +53,8 @@ class PlayerRepository
 
     public function getPlayerByCitizenID($citizenid = null)
     {
-        return array_values(array_filter($this->getPlayers(), function ($player) use ($citizenid) {
-            return $player->citizenid === $citizenid;
+        return array_values(array_filter($this->players->all()->toArray(), function ($player) use ($citizenid) {
+            return $player['citizenid'] === $citizenid;
         }));
     }
 
@@ -83,7 +74,7 @@ class PlayerRepository
     {
         $player = $this->getPlayerByCitizenID($citizenid);
 
-        if ( !empty($player[0]->inventory)) {
+        if ( !empty($player[0]['inventory'])) {
             return ['success' => true, 'data' => $player[0]['inventory']];
         }
 
