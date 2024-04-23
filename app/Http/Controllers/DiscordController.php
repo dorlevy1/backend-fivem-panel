@@ -23,6 +23,8 @@ class DiscordController extends Controller
 
     public function getOnlinePlayers()
     {
+        return env('FIVEM_IP') . '/players.json';
+
         return $this->discordService->getOnlinePlayers();
     }
 
