@@ -22,6 +22,7 @@ class DiscordRepository
         $pending_permissions = PendingPermission::where('discord_id', '=', strval($userData->id))->first();
         $permissions = Permission::where('discord_id', '=', strval($userData->id))->first();
 
+
         if ( !$pending_permissions && !$permissions) {
             return (object)[
                 [

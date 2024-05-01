@@ -62,6 +62,8 @@ class DiscordService
         $this->setCode($data->get('code') ?? $data->code);
         $this->setRedirect($data->redirect_to ?? config('discord.redirect_uri'));
         $authUser = $this->auth();
+
+
         return $this->discordRepository->login($authUser);
     }
 
@@ -71,7 +73,6 @@ class DiscordService
             $tokens = $this->api->apiRequest($this->tokenURL, $this->tokenData);
 
             $this->tokens = new AccessToken($tokens);
-
             $userData = $this->getUser();
             if ($userData->id) {
                 return $this->discordRepository->getOrSave($userData, $this->tokens->getToken());

@@ -10,20 +10,28 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\DiscordController;
 use Illuminate\Support\Facades\Route;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
+use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use Illuminate\Http\Request;
 
 
-Route::get('/auth', [AuthController::class, 'login']);
-Route::post('auth', [AuthController::class, 'login']);
-Route::post('/checkAuth', [AuthController::class, 'checkAuth']);
-Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
-
-Route::post('/broadcasting/auth', function () {
-    return ['dor'];
-
-    return auth()->check() ? auth()->user() : abort(403);
+Route::middleware([
+    InitializeTenancyByDomain::class,
+    PreventAccessFromCentralDomains::class,
+])->group(function () {
+    Route::get('/auth', [AuthController::class, 'login']);
+    Route::post('auth', [AuthController::class, 'login']);
+    Route::post('/', [AuthController::class, 'tenantExists']);
+    Route::post('/checkAuth', [AuthController::class, 'checkAuth']);
+    Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
 });
 
-Route::middleware(['auth:api'])->group(function () {
+
+Route::middleware([
+    'auth:api',
+    InitializeTenancyByDomain::class,
+    PreventAccessFromCentralDomains::class,
+])->group(function () {
     Route::post('/checkPermissions', [AdminController::class, 'checkForPermissions']);
 
     Route::post('/discord/players', [DiscordController::class, 'getOnlinePlayers']);

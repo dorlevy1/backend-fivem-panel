@@ -15,8 +15,9 @@ class DiscordController extends Controller
         $this->discordService = $discordService;
     }
 
-    public function handle(Request $request): void
+    public function handle(Request $request)
     {
+
         $this->discordService->setCode($request->get('code'));
         $this->discordService->auth();
     }

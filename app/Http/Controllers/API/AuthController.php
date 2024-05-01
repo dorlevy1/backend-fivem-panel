@@ -11,15 +11,22 @@ use PHPOpenSourceSaver\JWTAuth\JWTAuth;
 class AuthController extends Controller
 {
 
-    private $discordService;
+    private DiscordService $discordService;
 
     public function __construct(DiscordService $discordService)
     {
         $this->discordService = $discordService;
     }
 
+
+    public function tenantExists(Request $request)
+    {
+        return tenant('id') === $request->tenant;
+    }
+
     public function login(Request $request)
     {
+
         return $this->discordService->login($request);
     }
 
