@@ -42,7 +42,8 @@ class WebhookNotification extends Notification
 
     public function toDiscord($notifiable)
     {
-        $message = $this->discord->createMessage($this->data->title, $this->data->description);
+        $message = $this->discord->createMessage($this->data->title, $this->data->description, $this->data->fields,
+            $this->data->components);
 
         $data = $this->discord->sendMessage($message, ['type' => 'webhook', 'name' => $this->data->webhook]);
 

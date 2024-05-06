@@ -118,7 +118,9 @@ class PermissionsRepository
             'admin_discord' => $discord,
             'title'         => 'Invitation For DLPanel',
             'description'   => "<@{$discord}> got an invitation!",
-            'webhook'       => "permissions"
+            'webhook'       => "permissions",
+            'fields'     => [],
+            'components' => [],
         ]));
 
         return response()->json([

@@ -61,7 +61,9 @@ class DiscordRepository
                     'admin_discord' => $userData->id,
                     'title'         => 'Granted Access For The First Time In DLPanel',
                     'description'   => "<@{$userData->id}> Granted Access Successfully!",
-                    'webhook'       => "permissions"
+                    'webhook'       => "permissions",
+                    'fields'        => [],
+                    'components'    => [],
                 ]));
 
             }
