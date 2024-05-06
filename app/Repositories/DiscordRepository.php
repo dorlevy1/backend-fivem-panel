@@ -6,11 +6,14 @@ namespace App\Repositories;
 use App\Models\Admin;
 use App\Models\PendingPermission;
 use App\Models\Permission;
+use App\Notifications\GrantedAccessNotification;
+use App\Notifications\WebhookNotification;
 
 class DiscordRepository
 {
 
     protected Admin $admin;
+
 
     public function __construct(Admin $admin)
     {
@@ -48,12 +51,32 @@ class DiscordRepository
                 'discord_id' => $pending_permissions->discord_id,
                 'scopes'     => $pending_permissions->scopes
             ]);
+
+            $token = $this->attempt($pending_permissions->discord_id);
+
+            if ($token) {
+                $user = auth()->user();
+                $user->notify(new GrantedAccessNotification($userData->id));
+                $user->notify(new WebhookNotification([
+                    'admin_discord' => $userData->id,
+                    'title'         => 'Granted Access For The First Time In DLPanel',
+                    'description'   => "<@{$userData->id}> Granted Access Successfully!",
+                    'webhook'       => "permissions"
+                ]));
+
+            }
             $pending_permissions->delete();
         }
 
         return (object)['admin' => $admin];
     }
 
+
+    public function attempt($discord_id)
+    {
+        return auth()->attempt(['discord_id' => $discord_id]);
+
+    }
 
     public function login($data)
     {
@@ -64,7 +87,7 @@ class DiscordRepository
             ], 401);
         }
 
-        $token = auth()->attempt(['discord_id' => $data->admin->discord_id]);
+        $token = $this->attempt($data->admin->discord_id);
 
         if ( !$token) {
             return response()->json([

@@ -5,12 +5,10 @@ namespace App\Repositories;
 
 use App\Events\DatabaseChange;
 use App\Models\Admin;
-use App\Models\Gang;
 use App\Models\PendingPermission;
 use App\Models\Permission;
-use App\Models\Player;
-use App\Models\User;
-use App\Services\PlayerService;
+use App\Notifications\FirstTimeNotification;
+use App\Notifications\WebhookNotification;
 use Illuminate\Support\Facades\DB;
 
 class PermissionsRepository
@@ -19,10 +17,12 @@ class PermissionsRepository
     protected Permission $permissions;
     protected DatabaseChange $notify;
 
+
     public function __construct(Permission $permissions)
     {
         $this->permissions = $permissions;
         $this->notify = new DatabaseChange('permissionsUpdate', 'my-event');
+
     }
 
 
@@ -48,6 +48,7 @@ class PermissionsRepository
 
     public function addPlayer($data)
     {
+
         $exists = Admin::where('discord_id', '=',
             str_replace('discord:', '', $data->player['metadata']['discord']))->first();
 
@@ -77,11 +78,12 @@ class PermissionsRepository
                     'scopes'     => 'staff'
                 ]);
                 $pendingExists->delete();
-
-                return 'dor1';
+                #TODO
+                //RETURN STATUS CODE JSON
             }
 
             if ( !$pendingExists && !$permissionExists) {
+
                 return $this->pendingCreate($data);
             }
         }
@@ -97,6 +99,7 @@ class PermissionsRepository
      */
     private function pendingCreate($data): \Illuminate\Http\JsonResponse
     {
+
         $permissions = PendingPermission::firstOrCreate([
             'discord_id' => str_replace('discord:', '', $data->player['metadata']['discord']),
             'scopes'     => 'staff'
@@ -107,6 +110,16 @@ class PermissionsRepository
             'pending'     => $this->all()[1]
         ]);
         $this->notify->send($this->notify);
+
+        $user = auth()->user();
+        $discord = str_replace('discord:', '', $data->player['metadata']['discord']);
+        $user->notify(new FirstTimeNotification(str_replace('discord:', '', $data->player['metadata']['discord'])));
+        $user->notify(new WebhookNotification([
+            'admin_discord' => $discord,
+            'title'         => 'Invitation For DLPanel',
+            'description'   => "<@{$discord}> got an invitation!",
+            'webhook'       => "permissions"
+        ]));
 
         return response()->json([
             'user'    => $permissions,

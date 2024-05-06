@@ -25,6 +25,11 @@ class Admin extends Authenticatable implements JWTSubject
         'remember_token',
     ];
 
+    public function discordNotification($notifiable)
+    {
+        return 'identifier-from-notification-for-discord: ' . $this->id;
+    }
+
     public function avatar(): Attribute
     {
         return new Attribute(

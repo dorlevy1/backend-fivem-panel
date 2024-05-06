@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Helpers\AccessToken;
 use App\Helpers\API;
+use App\Helpers\Discord\DiscordAPI;
 use App\Models\Player;
 use App\Repositories\DiscordRepository;
 use Illuminate\Http\Request;
@@ -13,12 +14,11 @@ use PHPUnit\Runner\ErrorException;
 class DiscordService
 {
 
-    protected string $guild_id = '1192226332759834834';
+    protected string $guild_id;
     //Discord oauth service url
     protected string $tokenURL = 'https://discord.com/api/oauth2/token';
 
     //Discord api url
-    protected string $baseApi = 'https://discord.com/api';
 
     //Discord Bot Token
 
@@ -35,7 +35,7 @@ class DiscordService
     //User service constructor
     protected AccessToken|null $tokens;
     private DiscordRepository $discordRepository;
-    private $api;
+    private API $api;
 
     public function __construct(DiscordRepository $discordRepository)
     {
@@ -44,6 +44,8 @@ class DiscordService
         $this->tokenData['client_secret'] = config('discord.client_secret');
         $this->tokenData['scope'] = config('discord.scopes');
         $this->api = new API();
+        $this->discord = new DiscordAPI();
+        $this->guild_id = env('DISCORD_BOT_GUILD');
     }
 
     public function setCode($code): void
@@ -56,12 +58,12 @@ class DiscordService
         $this->tokenData['redirect_uri'] = $uri;
     }
 
-
     public function login($data)
     {
         $this->setCode($data->get('code') ?? $data->code);
         $this->setRedirect($data->redirect_to ?? config('discord.redirect_uri'));
         $authUser = $this->auth();
+
         return $this->discordRepository->login($authUser);
     }
 
@@ -69,10 +71,8 @@ class DiscordService
     {
         try {
             $tokens = $this->api->apiRequest($this->tokenURL, $this->tokenData);
-
             $this->tokens = new AccessToken($tokens);
-
-            $userData = $this->getUser();
+            $userData = $this->discord->getUser($this->tokens->getToken());
             if ($userData->id) {
                 return $this->discordRepository->getOrSave($userData, $this->tokens->getToken());
             }
@@ -82,39 +82,6 @@ class DiscordService
         } catch (ErrorException $e) {
             return $e->getMessage();
         }
-    }
-
-    private function getUser()
-    {
-
-        try {
-            $user = $this->api->apiRequest('https://discord.com/api/users/@me', null, $this->tokens->getToken());
-
-            if ( !$user->mfa_enabled) {
-                throw new ErrorException('You Must Enabled MFA Auth');
-            }
-
-            return $this->checkIfInGuild() ? $user : false;
-
-        } catch (\ErrorException $e) {
-            return $e->getMessage();
-        }
-
-    }
-
-
-    public function checkIfInGuild()
-    {
-
-        $guilds = $this->api->apiRequest('https://discord.com/api/users/@me/guilds', null, $this->tokens->getToken());
-
-        foreach ($guilds as $guild) {
-            if (isset($guild->id) && $guild->id === $this->guild_id) {
-                return $guild;
-            }
-        }
-
-        return false;
     }
 
     public function getOnlinePlayers(): \Illuminate\Http\JsonResponse
@@ -170,7 +137,6 @@ class DiscordService
         }
 
         return response()->json($playerA);
-
 
     }
 }

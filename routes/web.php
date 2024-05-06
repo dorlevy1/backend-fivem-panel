@@ -2,15 +2,9 @@
 
 use App\Events\DatabaseChange;
 use App\Http\Controllers\API\AuthController;
-use App\Http\Controllers\DiscordController;
 use App\Http\Middleware\SubdomainEnsure;
-use App\Models\Player;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Broadcast;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Session;
 
 Route::domain('{subdomain}.' . env('APP_URL'))->middleware([SubdomainEnsure::class])->group(function () {
     Route::get('test', function ($subdomain) {
@@ -26,9 +20,10 @@ Route::domain('{subdomain}.' . env('APP_URL'))->middleware([SubdomainEnsure::cla
     });
 });
 
-Route::get('/', function (Request $request) {
-    return Player::all();
-})->middleware(['auth:api']);
+Route::get('/test', function (Request $request) {
+    $helper = new \App\Helpers\Discord\DiscordAPI();
+//    $helper->createWebhookChannels();
+});
 
 
 Route::redirect('/login', 'https://discord.com/oauth2/authorize?client_id=' . config('discord.client_id')
