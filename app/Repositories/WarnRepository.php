@@ -3,11 +3,13 @@
 
 namespace App\Repositories;
 
+use AllowDynamicProperties;
 use App\Events\DatabaseChange;
+use App\Helpers\Discord\DiscordMessage;
 use App\Models\Player;
 use App\Models\Warn;
 
-class WarnRepository
+#[AllowDynamicProperties] class WarnRepository
 {
 
     protected Warn $warn;
@@ -18,10 +20,13 @@ class WarnRepository
     {
         $this->warn = $warn;
         $this->notify = new DatabaseChange('warnsUpdate', 'my-event');
+        $this->discordMessage = new DiscordMessage();
+
     }
 
     public function getWarns()
     {
+
         return $this->warn->all();
     }
 
@@ -53,6 +58,37 @@ class WarnRepository
         $this->inGameNotify->send($this->inGameNotify);
 
         $this->sendSocket($this->getWarns());
+
+        $user = auth()->user();
+
+        $discord_id = str_replace('discord:', '', $data->player['metadata']['discord']);
+        $time = date('Y-m-d h:i:s');
+        $fields = [
+            [
+                'name'  => 'Warn Details',
+                'value' => "**Action By:** <@{$user->discord_id}>\n**Player:** <@{$discord_id}>\n**Time:** ||{$time}||\n**Reason:** ||{$data->res['reason']}||"
+            ],
+        ];
+
+
+        $components['components'] = $this->discordMessage->createButtonComponent([
+            [
+                'type'      => 2,
+                'label'     => "Click To Give Ban.",
+                'style'     => 1,
+                'custom_id' => "add_ban+{$discord_id}+{$data->res['reason']}"
+            ]
+        ]);
+
+
+        $this->discordMessage->createMessage([
+            'adminDiscordId' => $user->discord_id,
+            'title'          => 'Warn Added',
+            'description'    => "<@{$user->discord_id}> Give Warn To <@{$discord_id}>!",
+            'webhook'        => "warns",
+            'fields'         => $fields,
+            'components'     => $components,
+        ]);
 
 
         return $warn;

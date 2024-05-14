@@ -10,6 +10,8 @@ enum Discord
     case ME;
     case MEMBER_GUILD;
     case GUILD_CHANNELS;
+    case DELETE_MESSAGE;
+    case CREATE_ROLE;
 
     public function endpoint($data = []): string
     {
@@ -22,6 +24,8 @@ enum Discord
             Discord::SEND_MESSAGE => "{$baseUrl}/channels/{$data->channelId}/messages",
             Discord::MEMBER_GUILD => "{$baseUrl}/guilds/{$data->guildId}/members/{$data->memberId}",
             Discord::GUILD_CHANNELS => "{$baseUrl}/guilds/{$data->guildId}/channels",
+            Discord::DELETE_MESSAGE => "{$baseUrl}/channels/{$data->channelId}/messages/{$data->messageId}",
+            Discord::CREATE_ROLE => "{$baseUrl}/guilds/{$data->guildId}/roles",
             Discord::ME => "{$baseUrl}/users/@me",
         };
     }

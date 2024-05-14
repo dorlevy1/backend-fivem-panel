@@ -18,8 +18,6 @@ Route::post('/checkAuth', [AuthController::class, 'checkAuth']);
 Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
 
 Route::post('/broadcasting/auth', function () {
-    return ['dor'];
-
     return auth()->check() ? auth()->user() : abort(403);
 });
 
@@ -50,6 +48,8 @@ Route::middleware(['auth:api'])->group(function () {
     Route::prefix('gangs')->group(function () {
         Route::post('/', [GangsController::class, 'view']);
     });
+
+
     Route::prefix('warns')->group(function () {
         Route::post('/', [WarnsController::class, 'view']);
         Route::post('/add', [WarnsController::class, 'add']);

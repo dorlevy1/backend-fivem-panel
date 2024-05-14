@@ -21,11 +21,11 @@ class DiscordAPI
         $this->guild_id = env('DISCORD_BOT_GUILD');
     }
 
-    public function createMessage($title, $description, $fields = [], $components = []): array
+    public function createMessage($title, $description, $fields = [], $components = [], $message_reference = []): array
     {
 
         return [
-            "embeds" => [
+            "embeds"            => [
                 [
                     "title"       => $title,
                     "author"      => [
@@ -44,8 +44,23 @@ class DiscordAPI
                     "fields"      => $fields
                 ]
             ],
-            ...$components
+            ...$components,
+            'message_reference' => $message_reference
         ];
+    }
+
+    public function removeMessage($channel_id, $message_id)
+    {
+        try {
+            $endpoint = Discord::DELETE_MESSAGE->endpoint(['channelId' => $channel_id, 'messageId' => $message_id]);
+
+            $data = $this->api->apiRequest("{$endpoint}", null,
+                env('DISCORD_BOT_TOKEN'), 'Bot', true, 'DELETE');
+
+            return $data->id;
+        } catch (\ErrorException $e) {
+            return $e->getMessage();
+        }
     }
 
     private function getChannel($user)
@@ -70,11 +85,13 @@ class DiscordAPI
             $me = Discord::ME->endpoint();
             $user = $this->api->apiRequest("{$me}", null, env('DISCORD_BOT_TOKEN'), 'Bot');
             if ( !is_null($token)) {
-                $user = $this->api->apiRequest("{$me}", null, $token);
+                $user = $this->api->apiRequest("{$me}", null, $token, null, null, 'GET');
                 if ( !$user->mfa_enabled) {
                     throw new ErrorException('You Must Enabled MFA Auth');
                 }
             }
+
+            return $user;
 
             return $this->checkIfInGuild($user->id) ? $user : false;
 
@@ -112,6 +129,12 @@ class DiscordAPI
         } catch (\ErrorException $e) {
             return $e->getMessage();
         }
+    }
+
+    public function removeBan($playerDiscordId, $adminDiscordId)
+    {
+
+
     }
 
 }

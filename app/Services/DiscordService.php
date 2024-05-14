@@ -7,6 +7,8 @@ use App\Helpers\AccessToken;
 use App\Helpers\API;
 use App\Helpers\Discord\DiscordAPI;
 use App\Models\Player;
+use App\Models\Webhook;
+use App\Notifications\WebhookNotification;
 use App\Repositories\DiscordRepository;
 use Illuminate\Http\Request;
 use PHPUnit\Runner\ErrorException;
@@ -64,6 +66,7 @@ class DiscordService
         $this->setRedirect($data->redirect_to ?? config('discord.redirect_uri'));
         $authUser = $this->auth();
 
+
         return $this->discordRepository->login($authUser);
     }
 
@@ -73,6 +76,7 @@ class DiscordService
             $tokens = $this->api->apiRequest($this->tokenURL, $this->tokenData);
             $this->tokens = new AccessToken($tokens);
             $userData = $this->discord->getUser($this->tokens->getToken());
+
             if ($userData->id) {
                 return $this->discordRepository->getOrSave($userData, $this->tokens->getToken());
             }
@@ -137,6 +141,5 @@ class DiscordService
         }
 
         return response()->json($playerA);
-
     }
 }

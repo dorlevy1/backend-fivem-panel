@@ -18,6 +18,7 @@ class WarnService
 
     public function getWarns()
     {
+
         return $this->warnRepository->getWarns();
     }
 

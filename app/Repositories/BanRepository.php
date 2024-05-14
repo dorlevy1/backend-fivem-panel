@@ -3,12 +3,15 @@
 
 namespace App\Repositories;
 
+use AllowDynamicProperties;
 use App\Events\DatabaseChange;
+use App\Helpers\Discord\DiscordMessage;
 use App\Models\Ban;
 use App\Models\Player;
+use App\Notifications\WebhookNotification;
 use Illuminate\Http\Request;
 
-class BanRepository
+#[AllowDynamicProperties] class BanRepository
 {
 
     protected Ban $bans;
@@ -19,12 +22,14 @@ class BanRepository
     {
         $this->bans = $bans;
         $this->notify = new DatabaseChange('bansUpdate', 'my-event');
+        $this->discordMessage = new DiscordMessage();
     }
 
     public function getBans()
     {
         return $this->bans->all();
     }
+
     private function updateInGameNotify($name): void
     {
         $this->inGameNotify = new DatabaseChange($name, 'my-event');
@@ -32,7 +37,6 @@ class BanRepository
 
     public function add($data)
     {
-
 
         $ban = Ban::create([
             'discord'  => strval($data->player['metadata']['discord']),
@@ -48,15 +52,60 @@ class BanRepository
                 strval($data->player['license']))->first()->id);
 
         $this->inGameNotify->setData([
-            'type'    => 'BAN',
-            'message' => $data->res['reason'],
-            'timeout' => 10000,
-            'banUntil'=> strtotime($data->res['date'])
+            'type'     => 'BAN',
+            'message'  => $data->res['reason'],
+            'timeout'  => 10000,
+            'banUntil' => strtotime($data->res['date'])
 
         ]);
         $this->inGameNotify->send($this->inGameNotify);
         $this->sendSocket($this->bans->all());
+        $user = auth()->user();
 
+        $discord_id = str_replace('discord:', '', $data->player['metadata']['discord']);
+        $time = date('Y-m-d h:i:s');
+        $fields = [
+            [
+                'name'  => 'Ban Details',
+                'value' => "**Action By:** <@{$user->discord_id}>\n**Player:** <@{$discord_id}>\n**Ban Until:** ||{$time}||\n**Reason:** ||{$data->res['reason']}||"
+            ],
+        ];
+        $components['components'] = [
+            [
+                "type"       => 1,
+                "components" => [
+                    [
+                        "type"      => 2,
+                        "label"     => "Click To Cancel Ban.",
+                        "style"     => 1,
+                        //                        "url"   => "https://google.com",
+                        "custom_id" => "cancel_ban+" . $discord_id
+                    ]
+                ]
+            ],
+            //            [
+            //                "type"       => 1,
+            //                "components" => [
+            //                    [
+            //                        "type"      => 6,
+            //                        "label"     => "Click To Cancel Ban.",
+            //                        "style"     => 1,
+            //                        //                        "url"   => "https://google.com",
+            //                        "custom_id" => "cancdel_ban"
+            //                    ],
+            //                ]
+            //            ],
+        ];
+
+        $this->discordMessage->createMessage([
+            'adminDiscordId' => $user->discord_id,
+            'title'          => 'Ban Added',
+            'description'    => "<@{$user->discord_id}> Give Ban To <@{$discord_id}>!",
+            'webhook'        => "bans",
+            'fields'         => $fields,
+            'components'     => $components,
+
+        ]);
 
         return $ban;
     }

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\Discord;
 use App\Helpers\API;
 use App\Helpers\Discord\DiscordAPI;
+use App\Helpers\Discord\DiscordMessage;
 use App\Models\Webhook;
 use Illuminate\Console\Command;
 
@@ -32,7 +33,7 @@ class InitWebhookDiscordChannels extends Command
     {
 
         $api = new API();
-        $discord = new DiscordAPI();
+        $message = new DiscordMessage();
 
         try {
             $endpoint = Discord::GUILD_CHANNELS->endpoint(['guildId' => env('DISCORD_BOT_GUILD_LOGS')]);
@@ -65,24 +66,44 @@ class InitWebhookDiscordChannels extends Command
             $channelsArray[] = $api->apiRequest("{$endpoint}",
                 json_encode(['name' => 'Announcements', 'parent_id' => $channelsArray[0]->id]),
                 env('DISCORD_BOT_TOKEN'), 'Bot', true);
+            $channelsArray[] = $api->apiRequest("{$endpoint}",
+                json_encode(['name' => 'redeem-codes', 'parent_id' => $channelsArray[0]->id]),
+                env('DISCORD_BOT_TOKEN'), 'Bot', true);
 
             foreach ($channelsArray as $channel) {
-                Webhook::create([
+                Webhook::updateOrCreate([
+                    'name' => $channel->name
+                ], [
                     'name'       => $channel->name,
                     'channel_id' => $channel->id,
                     'parent'     => $channel->type === 4
                 ]);
                 if ($channel->type !== 4) {
-                    $message = $discord->createMessage("Initialization For " . ucfirst($channel->name),
-                        ucfirst($channel->name) . " Initialization Finished Successfully.");
-                    $discord->sendMessage($message, ['type' => 'webhook', 'name' => $channel->name]);
+                    $message->createMessage([
+                        'adminDiscordId' => 1,
+                        'title'          => "Initialization For " . ucfirst($channel->name),
+                        'description'    => ucfirst($channel->name) . " Initialization Finished Successfully.",
+                        'webhook'        => $channel->name,
+                    ]);
+
                     $this->info(ucfirst($channel->name) . ' Initialization finished successfully');
                     $this->info('Check First Message In ' . ucfirst($channel->name));
-                    $this->newLine();
                 } else {
                     $this->info($channel->name . ' Initialization finished successfully');
-                    $this->newLine();
                 }
+                $this->newLine();
+            }
+            $this->info('Initialization for Channels finished successfully');
+
+            $dataRole = [
+                'name'  => 'Bans',
+                'color' => 255,
+            ];
+            $endpoint = Discord::CREATE_ROLE->endpoint(['guildId' => env('DISCORD_BOT_GUILD_LOGS')]);
+            $role = $api->apiRequest("{$endpoint}", json_encode($dataRole),
+                env('DISCORD_BOT_TOKEN'), 'Bot', true);
+            if ($role) {
+                $this->info('Bans Role Created Successfully');
             }
         } catch (\ErrorException $e) {
             return $e->getMessage();

@@ -21,8 +21,8 @@ Route::domain('{subdomain}.' . env('APP_URL'))->middleware([SubdomainEnsure::cla
 });
 
 Route::get('/test', function (Request $request) {
-    $helper = new \App\Helpers\Discord\DiscordAPI();
-//    $helper->createWebhookChannels();
+    //    $helper = new \App\Helpers\Discord\DiscordAPI();
+    //    $helper->createWebhookChannels();
 });
 
 

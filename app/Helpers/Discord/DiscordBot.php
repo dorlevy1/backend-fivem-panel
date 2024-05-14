@@ -1,9 +1,8 @@
 <?php
 
 
-namespace Bot;
+namespace App\Helpers\Discord;
 
-include '../vendor/autoload.php';
 
 use Discord\Builders\CommandBuilder;
 use Discord\Builders\Components\ActionRow;
@@ -11,13 +10,12 @@ use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Exceptions\IntentException;
+use Discord\Interaction;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Command\Option;
-use Discord\Interaction;
 use Discord\WebSockets\Event;
 use Discord\WebSockets\Intents;
-use Dotenv\Dotenv;
 
 class DiscordBot
 {
@@ -26,7 +24,6 @@ class DiscordBot
      * @throws IntentException
      */
 
-    private Dotenv $dotenv;
 
     public Discord $bot;
 
@@ -37,15 +34,15 @@ class DiscordBot
     public array $builders;
     public array $data;
 
+    public DiscordAPI $discordAPI;
+
 
     /**
      * @throws IntentException
      */
     public function __construct()
     {
-        $this->dotenv = Dotenv::createImmutable(__DIR__ . '/../');
-        $this->dotenv->load();
-
+        $this->discordAPI = new DiscordAPI();
         $this->bot = new Discord([
             'token'          => $_ENV['DISCORD_BOT_TOKEN'],
             'loadAllMembers' => true,
@@ -69,28 +66,8 @@ class DiscordBot
         $this->builders = [];
     }
 
-    //    public function onReady(): void
-    //    {
-    //        $this->bot->on('ready', function (Discord $discord) {
-    //            $this->setData($discord);
-    //
-    //
-    //            foreach ($this->embeds as $key => $embed) {
-    //                $this->sendEmbed($key);
-    //            }
-    //
-    //            foreach ($this->buttons as $key => $button) {
-    //                $this->sendInvitation($key);
-    //            }
-    //
-    //        });
-    //    }
 
 
-    public function createAction()
-    {
-
-    }
 
     public function sendInvitation($id): void
     {
@@ -119,7 +96,6 @@ class DiscordBot
 
         $this->embeds[$data->id] = $embed;
     }
-
 
     public function sendEmbed($id)
     {
@@ -166,53 +142,8 @@ class DiscordBot
             '1236135756486017075');
 
 
-        //        $this->createButtonMessage(['id' => 'invitation', 'label' => 'Start Authorization']);
-
-        //        $this->createEmbed($discord,
-        //            [
-        //                'id'          => 'invitation',
-        //                'title'       => 'DDL Panel',
-        //                'description' => 'You\'ve got an invitation!',
-        //                'fields'      => $fields
-        //            ]);
 
 
-        $addPermission = CommandBuilder::new()->setName('permissions')->setDescription('Add Permissions for DLPanel');
-        $discord->application->commands->save($discord->application->commands->create(
-            $addPermission->addOption((new Option($discord))->setName('user')
-                                                            ->setDescription('Select User To Add')
-                                                            ->setType(Option::USER))
-                          ->addOption((new Option($discord))->setName('role')
-                                                            ->setDescription('Select Role To Add')
-                                                            ->setType(Option::ROLE))->toArray()
-
-        ));
-
-
-        $discord->listenCommand('permissions', function (Interaction $interaction) {
-            //        $user = $interaction->data->resolved->users->first();
-            if ($interaction->member->permissions->use_application_commands) {
-                $interaction->respondWithMessage(MessageBuilder::new()->setContent("Gained Access For, {$interaction->user}"));
-            } else {
-                $interaction->respondWithMessage(MessageBuilder::new()->setContent("No Gain Access For, {$interaction->user}"));
-            }
-        });
-
-
-        //    $discord->guilds->get('id', '1192226332759834834')->channels->get('name',
-        //        'dor-tests')->sendMessage($builder->addComponent($action->addComponent($button)))->then(function (
-        //        Message $message
-        //    ) {
-        //        echo "Message sent in the channel {$message->channel->id}";
-        //    });
-
-
-        //    var_dump($discord->guilds->get('id', '1192226332759834834')->members->get('id',
-        //        '604330997630238726')->sendMessage('Dor Test '));
-        //    roles->get('name', 'Dev Access')
-        //    $discord->users->fetch('604330997630238726', true)->then(function ($user) {
-        //        var_dump($user);
-        //    });
 
         // Listen for messages.
         $discord->on(Event::MESSAGE_CREATE, function (Message $message, Discord $discord) {
@@ -220,7 +151,6 @@ class DiscordBot
             // Note: MESSAGE_CONTENT intent must be enabled to get the content if the bot is not mentioned/DMed.
         });
     }
-
 
     public function run(): void
     {
