@@ -46,10 +46,10 @@ class WebhookNotification extends Notification
      * @return array<string, mixed>
      */
 
-    public function toDiscord($notifiable)
+    public function toDiscord($notifiable): array
     {
 
-        $data = (new DiscordWebhook($this->webhook, $this->message))->send();
+        $data = (new DiscordWebhook($this->webhook, $this->message));
 
         return [
             'from'       => 'WebhookNotification',

@@ -18,6 +18,19 @@ class DiscordWebhook
         $this->api = new DiscordAPI();
         $this->type = $type;
         $this->message = $message;
+
+        switch ($type) {
+            case Webhook::BAN->value:
+                return $this->banWebhook($message);
+            case Webhook::KICKS->value:
+                return $this->kickWebhook($message);
+            case Webhook::ANNOUNCE->value:
+                return $this->announceWebhook($message);
+            case Webhook::WARNS->value:
+                return $this->warnWebhook($message);
+            case Webhook::REDEEM->value:
+                return $this->redeemWebhook($message);
+        }
     }
 
 
@@ -33,7 +46,7 @@ class DiscordWebhook
                 return $this->announceWebhook($this->message);
             case Webhook::WARNS->value:
                 return $this->warnWebhook($this->message);
-                case Webhook::REDEEM->value:
+            case Webhook::REDEEM->value:
                 return $this->redeemWebhook($this->message);
         }
     }
