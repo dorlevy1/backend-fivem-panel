@@ -11,7 +11,6 @@ use Discord\WebSockets\Intents;
 class Client
 {
 
-
     /**
      * @throws IntentException
      */
@@ -19,16 +18,11 @@ class Client
 
     public Discord $client;
 
-
-    private DiscordAPI $discordAPI;
-
-
     /**
      * @throws IntentException
      */
     public function __construct()
     {
-        $this->discordAPI = new DiscordAPI();
         $this->client = new Discord([
             'token'          => $_ENV['DISCORD_BOT_TOKEN'],
             'loadAllMembers' => true,
@@ -47,15 +41,6 @@ class Client
     public function __get($name)
     {
         return $this[$name];
-    }
-    public function api(): DiscordAPI
-    {
-        return $this->discordAPI;
-    }
-
-    public function client(): Discord
-    {
-        return $this->client;
     }
 
 }

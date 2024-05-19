@@ -42,7 +42,7 @@ class GrantedAccessNotification extends Notification
     public function toDiscord($notifiable)
     {
 
-        $message = $this->discord->createMessage("Permissions", "You've Granted Permissions.");
+        $message = $this->discord->createMessageAPI("Permissions", "You've Granted Permissions.");
 
 
         $this->discord->sendMessage($message,  ['type' => 'user', 'id' => $this->admin_discord]);

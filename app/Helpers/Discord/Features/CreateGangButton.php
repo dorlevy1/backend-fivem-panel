@@ -34,7 +34,7 @@ class CreateGangButton
     }
 
 
-    public function createGangButtonChannel()
+    public function createGangButtonChannel(): bool|string
     {
         try {
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
@@ -44,7 +44,7 @@ class CreateGangButton
             }
             $group = $guild->channels->create([
                 'name' => 'Gang Create Area',
-                'type' => Channel::TYPE_CATEGORY,
+                'type' => Channel::TYPE_GUILD_CATEGORY,
             ]);
 
             $guild->channels->save($group)->then(function (Channel $channel) use ($guild) {
@@ -84,7 +84,6 @@ class CreateGangButton
             })->done();
 
             return true;
-
         } catch (\ErrorException $e) {
             return $e->getMessage();
         }

@@ -6,6 +6,8 @@ use AllowDynamicProperties;
 use App\Models\GangCreationRequest;
 use App\Models\Webhook;
 use App\Notifications\WebhookNotification;
+use Discord\Builders\Components\ActionRow;
+use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
@@ -17,7 +19,6 @@ use Discord\Parts\Interactions\Interaction as In;
     public function __construct(Discord $client)
     {
         $this->client = $client;
-        $this->discordAPI = new DiscordAPI();
     }
 
 
@@ -120,6 +121,17 @@ use Discord\Parts\Interactions\Interaction as In;
               ->setFooter('DLPanel By D.D.L')->setTimestamp();
 
         return $embed;
+    }
+
+    protected function button(MessageBuilder $builder,$customId,$label): MessageBuilder
+    {
+        $action = ActionRow::new();
+        $button = Button::new(Button::STYLE_PRIMARY)->setCustomId($customId);
+        $button->setLabel($label);
+        $action->addComponent($button);
+        $builder->addComponent($action);
+
+        return $builder;
     }
 
     public function createDraft($data): array

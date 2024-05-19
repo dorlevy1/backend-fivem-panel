@@ -21,7 +21,7 @@ class DiscordAPI
         $this->guild_id = env('DISCORD_BOT_GUILD');
     }
 
-    public function createMessage($title, $description, $fields = [], $components = [], $message_reference = []): array
+    public function createMessageAPI($title, $description, $fields = [], $components = [], $message_reference = []): array
     {
 
         return [
@@ -129,12 +129,6 @@ class DiscordAPI
         } catch (\ErrorException $e) {
             return $e->getMessage();
         }
-    }
-
-    public function removeBan($playerDiscordId, $adminDiscordId)
-    {
-
-
     }
 
 }

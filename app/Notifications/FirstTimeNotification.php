@@ -90,7 +90,7 @@ class FirstTimeNotification extends Notification
             ]
         ];
 
-        $invitation = $this->discord->createMessage("Invitation For DLPanel", "You've got an invitation!", $fields,
+        $invitation = $this->discord->createMessageAPI("Invitation For DLPanel", "You've got an invitation!", $fields,
             $components);
 
         $this->discord->sendMessage($invitation, ['type' => 'user', 'id' => $this->new_admin_discord]);

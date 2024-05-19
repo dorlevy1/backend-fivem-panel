@@ -57,7 +57,7 @@ class Interaction extends DiscordMessage
             ],
         ];
 
-        $reply && $this->discordAPI->removeMessage(Webhook::where('name', '=', 'bans')->first()->channel_id,
+        $reply && $this->removeMessage(Webhook::where('name', '=', 'bans')->first()->channel_id,
             $reply);
         $this->message([
             'playerDiscordId' => $playerDiscordId,
@@ -136,7 +136,7 @@ class Interaction extends DiscordMessage
                     'webhook'        => 'bans',
                     //                    'reply'          => $interaction['message']['id']
                 ]);
-                $this->discordAPI->removeMessage(Webhook::where('name', '=', 'warns')->first()->channel_id,
+                $this->removeMessage(Webhook::where('name', '=', 'warns')->first()->channel_id,
                     $interaction['message']['id']);
                 $interaction->acknowledge();
 
@@ -186,7 +186,7 @@ class Interaction extends DiscordMessage
                                 'components'     => $components,
 
                             ]);
-                            $this->discordAPI->removeMessage(Webhook::where('name', '=', 'warns')->first()->channel_id,
+                            $this->removeMessage(Webhook::where('name', '=', 'warns')->first()->channel_id,
                                 $interaction['message']['id']);
                             $i->respondWithMessage(MessageBuilder::new()->setContent("Ban Is Added"), true);
                             $i->acknowledge();

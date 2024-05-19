@@ -23,7 +23,6 @@ use Discord\Parts\Interactions\Interaction as In;
     public function __construct(DiscordPHP $discord, DiscordPHP $client, $commandName, $commandDescription)
     {
         parent::__construct($client);
-        $this->discordAPI = new DiscordAPI();
         $this->commandName = $commandName;
         $this->s = $client;
         $this->discord = $discord;

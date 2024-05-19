@@ -2,26 +2,26 @@
 
 namespace App\Helpers\Discord;
 
-use App\Helpers\Discord\Commands\GangMembers;
-use App\Helpers\Discord\Commands\Permissions;
-use App\Helpers\Discord\Commands\Update;
+use AllowDynamicProperties;
 use App\Helpers\Discord\Features\CreateGangButton;
 use Discord\Discord as DiscordPHP;
 use Discord\Parts\Channel\Message;
 use Discord\WebSockets\Event;
 
-class Discord extends Client
+#[AllowDynamicProperties] class Discord extends Client
 {
+
+    private string $globalPathCommands = '\App\Helpers\Discord\Commands\\';
+    private string $directoryCommands = __DIR__ . '/Commands';
 
     public function __construct()
     {
         parent::__construct();
+        $this->entries = scandir($this->directoryCommands);
 
         $this->client->on('init', function (DiscordPHP $d) {
             new CreateGangButton($d, $this->client);
-            new GangMembers($d, $this->client);
-            new Permissions($d, $this->client);
-            new Update($d, $this->client);
+            $this->generate_commands($d);
 
             $d->on(Event::MESSAGE_CREATE, function (Message $message, DiscordPHP $discord) {
                 echo "{$message->author->username}: {$message->content}", PHP_EOL;
@@ -35,4 +35,17 @@ class Discord extends Client
         $this->client->run();
     }
 
+    private function generate_commands($d): void
+    {
+
+        foreach ($this->entries as $entry) {
+            if ($entry !== '.' && $entry !== '..') {
+                $path = $this->directoryCommands . '/' . $entry;
+                if (is_file($path)) {
+                    $class = $this->globalPathCommands . str_replace('.php', '', $entry);
+                    new $class($d, $this->client);
+                }
+            }
+        }
+    }
 }

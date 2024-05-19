@@ -2,6 +2,7 @@
 
 namespace App\Helpers\Discord\Commands;
 
+use App\Command;
 use App\Helpers\Discord\DiscordCommand;
 use App\Models\GangCreationRequest;
 use App\Models\Webhook;
@@ -13,13 +14,15 @@ use Discord\Parts\Channel\Channel;
 use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction as In;
 
-class GangMembers extends DiscordCommand
+class GangMembers extends DiscordCommand implements Command
 {
+
 
     public Discord $client;
 
     public function __construct(Discord $discord, Discord $client)
     {
+
         parent::__construct($discord, $client, 'gangmembers', 'Add Gang Members');
 
         $this->s = $client;
@@ -142,7 +145,7 @@ class GangMembers extends DiscordCommand
         return true;
     }
 
-    private function addOptions(): void
+    public function addOptions(): void
     {
 
         $this->save($this->command

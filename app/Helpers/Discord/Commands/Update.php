@@ -2,19 +2,15 @@
 
 namespace App\Helpers\Discord\Commands;
 
-use App\Helpers\Discord\Client;
+use App\Command;
 use App\Helpers\Discord\DiscordCommand;
 use App\Models\GangCreationRequest;
 use App\Models\Webhook;
-use Discord\Builders\Components\ActionRow;
-use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
-use Discord\Parts\Channel\Channel;
-use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction as In;
 
-class Update extends DiscordCommand
+class Update extends DiscordCommand implements Command
 {
 
     public function __construct(Discord $discord, Discord $client)
@@ -26,6 +22,9 @@ class Update extends DiscordCommand
         });
     }
 
+    public function addOptions()
+    {
+    }
 
     public function update(In $interaction): void
     {
