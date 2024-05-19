@@ -1,104 +1,52 @@
 <?php
 
-namespace App\Helpers\Discord;
+namespace App\Helpers\Discord\Commands;
 
-use AllowDynamicProperties;
+use App\Helpers\Discord\DiscordCommand;
 use App\Models\GangCreationRequest;
 use App\Models\Webhook;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
-use Discord\Discord as DiscordPHP;
-use Discord\Builders\CommandBuilder;
 use Discord\Builders\MessageBuilder;
+use Discord\Discord;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction as In;
 
-#[AllowDynamicProperties] class DiscordCommand extends DiscordMessage
+class GangMembers extends DiscordCommand
 {
 
-    public CommandBuilder $command;
-    public string $commandName;
+    public Discord $client;
 
-    public function __construct(DiscordPHP $discord, DiscordPHP $client, $commandName, $commandDescription)
+    public function __construct(Discord $discord, Discord $client)
     {
-        parent::__construct($client);
-        $this->discordAPI = new DiscordAPI();
-        $this->commandName = $commandName;
+        parent::__construct($discord, $client, 'gangmembers', 'Add Gang Members');
+
         $this->s = $client;
-        $this->discord = $discord;
-        $this->command = $this->create($commandName, $commandDescription);
-
-    }
-
-    private function create($commandName, $commandDescription): CommandBuilder
-    {
-        return CommandBuilder::new()->setName($commandName)->setDescription($commandDescription);
-    }
-
-    public function addOption($name, $description, $type)
-    {
-        return (new Option($this->discord))
-            ->setName($name)
-            ->setDescription($description)
-            ->setType($type);
-
-    }
-
-    public function save($data)
-    {
-        $this->discord->application->commands->save($this->discord->application->commands->create($data));
-    }
-
-    public function listen(): void
-    {
-        $this->discord->listenCommand($this->commandName, function (In $interaction) {
-            //        $user = $interaction->data->resolved->users->first();
-
-            match ($this->commandName) {
-                'permissions' => $this->permissions($interaction),
-                'gangmembers' => $this->addGang($interaction),
-                'update' => $this->update($interaction),
-            };
+        $this->addOptions();
+        $this->listen2(function (In $interaction) {
+            $this->addGang($interaction);
         });
     }
 
-    protected function listen2($cb): void
-    {
-        $this->discord->listenCommand($this->commandName, function (In $interaction) use ($cb) {
-            $cb($interaction);
-        });
-    }
-
-    private function permissions(In $interaction): void
-    {
-        if (isset($interaction->data->options['users'])) {
-            foreach (explode(' ',
-                str_replace('  ', ' ', $interaction->data->options['users']->value)) as $discord) {
-                $id = str_replace('>', '', str_replace('<@', '', $discord));
-                if ( !empty($id)) {
-                    var_dump($id);
-                }
-            }
-        }
-
-        return;
-        if ($interaction->member->permissions->use_application_commands) {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent("Gained Access For, {$interaction->user}"));
-        } else {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent("No Gain Access For, {$interaction->user}"));
-        }
-    }
-
-    /**
-     * @throws \Exception
-     */
-    private function addGang(In $interaction): void
+    private function addGang(In $interaction): bool
     {
         $text = "";
         $readyForRequest = true;
         $talkTo = '';
         $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+
+
+        $request = GangCreationRequest::where("discord_id", '=', $interaction->user->id)->first();
+
+        if (isset($request->channel_id) && $interaction->guild->channels->get('id', $request->channel_id)) {
+            $builder = $this->messageSummaryRequest($interaction);
+            $interaction->guild->channels->get('id', $request->channel_id);
+            $interaction->respondWithMessage($builder->setContent("You Already Have Exists Request.\n<#{$request->channel_id}>"),
+                true);
+
+            return false;
+        }
 
         foreach ($interaction->data->options as $option) {
             $roles = $guild->members->get('id', $option->value)->roles;
@@ -122,7 +70,6 @@ use Discord\Parts\Interactions\Interaction as In;
         foreach ($options as $option) {
             $arr[] = $option->value;
         }
-
 
         $embed = $this->createSummaryRequestEmbed($this->s, $interaction, $text, $readyForRequest, $talkTo);
 
@@ -148,7 +95,6 @@ use Discord\Parts\Interactions\Interaction as In;
             $boss,
             $readyForRequest
         ) {
-
             GangCreationRequest::updateOrCreate(['discord_id' => $interaction->user->id], [
                 'members'           => implode(',', $arr),
                 'co_boss'           => $co_boss,
@@ -157,6 +103,7 @@ use Discord\Parts\Interactions\Interaction as In;
                 'channel_id'        => $channel->id,
 
             ]);
+
             $channel->setPermissions($interaction->guild->roles->get('name', '@everyone'),
                 [], ['view_channel'])->done(function () use ($interaction, $channel, $embed, $guild, $talkTo) {
                 $roles = empty($talkTo) ?
@@ -187,23 +134,34 @@ use Discord\Parts\Interactions\Interaction as In;
 
                     $interaction->respondWithMessage(MessageBuilder::new()->setContent($content),
                         true);
-                }, function () {
                 });
             });
 
         })->done();
 
+        return true;
     }
 
-    public function update(In $interaction): void
+    private function addOptions(): void
     {
-        $gangCreateArea = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
-        $joinToGang = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
 
-        match ($interaction->channel->parent_id) {
-            $gangCreateArea => $this->updateRequestGang($interaction),
-            $joinToGang => $interaction->respondWithMessage(MessageBuilder::new()->setContent("Not Here Mate..\nInside Your Request ONLY"))
-        };
+        $this->save($this->command
+            ->addOption($this->addOption('boss', 'Boss', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('co_boss', 'Co Boss', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-3', 'Member No 3', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-4', 'Member No 4', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-5', 'Member No 5', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-6', 'Member No 6', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-7', 'Member No 7', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-8', 'Member No 8', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-9', 'Member No 9', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-10', 'Member No 10', Option::USER)->setRequired(true))
+            ->addOption($this->addOption('member-11', 'Member No 11', Option::USER))
+            ->addOption($this->addOption('member-12', 'Member No 12', Option::USER))
+            ->addOption($this->addOption('member-13', 'Member No 13', Option::USER))
+            ->addOption($this->addOption('member-14', 'Member No 14', Option::USER))
+            ->addOption($this->addOption('member-15', 'Member No 15', Option::USER))
+            ->toArray());
     }
 
     private function updateRequestGang(In $interaction)
@@ -249,6 +207,5 @@ use Discord\Parts\Interactions\Interaction as In;
         $embed = $this->createSummaryRequestEmbed($this->s, $interaction, $text, $roleExists, $talkTo);
 
     }
-
 
 }

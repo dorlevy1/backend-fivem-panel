@@ -27,6 +27,8 @@ class WebhookNotification extends Notification
         $this->admin_discord = $data['admin_discord'];
         $this->message = $data['message'];
         $this->webhook = $data['webhook'];
+        $this->id = $data['id'] ?? null;
+
     }
 
 
@@ -49,7 +51,7 @@ class WebhookNotification extends Notification
     public function toDiscord($notifiable): array
     {
 
-        $data = (new DiscordWebhook($this->webhook, $this->message));
+        $data = (new DiscordWebhook($this->webhook, $this->message, $this->id));
 
         return [
             'from'       => 'WebhookNotification',

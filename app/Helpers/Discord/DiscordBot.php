@@ -48,7 +48,6 @@ class DiscordBot
             'loadAllMembers' => true,
             'storeMessages'  => true,
             'retrieveBans'   => true,
-            'pmChannels'     => true,
             'intents'        => Intents::getDefaultIntents() | Intents::GUILDS |
                 Intents::GUILD_MESSAGES |
                 Intents::DIRECT_MESSAGES |
@@ -65,8 +64,6 @@ class DiscordBot
         $this->actions = [];
         $this->builders = [];
     }
-
-
 
 
     public function sendInvitation($id): void
@@ -140,9 +137,6 @@ class DiscordBot
         $guild = $discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
         $channel = $guild->channels->get('id',
             '1236135756486017075');
-
-
-
 
 
         // Listen for messages.

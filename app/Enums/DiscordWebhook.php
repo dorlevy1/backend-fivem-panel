@@ -11,4 +11,7 @@ enum DiscordWebhook: string
     case WARNS = 'warns';
     case ANNOUNCE = 'announce';
     case REDEEM = 'redeem-code';
+    case GANG_CREATION = 'gang-creation';
+    case PRIVATE_USER = 'private';
+
 }

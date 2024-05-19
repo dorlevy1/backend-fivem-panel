@@ -5,31 +5,41 @@ namespace App\Helpers\Discord;
 use App\Models\Admin;
 use App\Models\Ban;
 use App\Enums\Interaction as InteractionEnum;
+use App\Models\GangCreationRequest;
 use App\Models\Player;
 use App\Models\Webhook;
-use App\Repositories\BanRepository;
 use Carbon\Carbon;
 use Discord\Builders\Components\ActionRow;
+use Discord\Builders\Components\Button;
+use Discord\Builders\Components\Option;
+use Discord\Builders\Components\StringSelect;
 use Discord\Builders\Components\TextInput;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
 use Illuminate\Http\Request;
 use Discord\Parts\Interactions\Interaction as In;
+use Discord\Discord as DiscordPHP;
+use Illuminate\Support\Facades\DB;
 
 class Interaction extends DiscordMessage
 {
 
-
-    public function __construct($interaction)
+    /**
+     * @throws \Exception
+     */
+    public function __construct(DiscordPHP $client, DiscordPHP $discord, $interaction)
     {
-        parent::__construct();
-
-
+        parent::__construct($client);
         $name = explode('+', $interaction['data']['custom_id'])[0];
+
+        $this->discord = $discord;
+        $this->client = $client;
 
         return match ($name) {
             InteractionEnum::CANCEL_BAN->value => $this->cancel_ban($interaction),
             InteractionEnum::ADD_BAN->value => $this->add_ban($interaction),
+            InteractionEnum::GANG_REQUEST->value => $this->gang_request($interaction),
+            InteractionEnum::CHECK_UPDATE_ROLES->value => $this->check_update_roles($interaction),
             default => true,
         };
 
@@ -59,9 +69,9 @@ class Interaction extends DiscordMessage
     }
 
 
-    private function getPermissions($interaction): bool
+    private function getPermissions(In $interaction): bool
     {
-        foreach ($interaction['member']['roles'] as $role) {
+        foreach ($interaction->member->roles as $role) {
             if (strtolower($role->name) === 'bans' || strtolower($role->name) === 'god') {
                 $admin = Admin::where('discord_id', '=', $interaction['member']['user']->id)->first();
                 if ( !is_null($admin)) {
@@ -73,9 +83,9 @@ class Interaction extends DiscordMessage
         return false;
     }
 
-    private function cancel_ban($interaction): bool
+    private function cancel_ban(In $interaction): bool
     {
-        $discord_id_ban = explode('+', $interaction['data']['custom_id'])[1];
+        $discord_id_ban = explode('+', $interaction->data->custom_id)[1];
         if ($this->getPermissions($interaction)) {
             $ban = Ban::where('discord', 'LIKE', '%' . $discord_id_ban . '%')->first();
             if (is_null($ban)) {
@@ -161,7 +171,6 @@ class Interaction extends DiscordMessage
                                             "type"      => 2,
                                             "label"     => "Click To Cancel Ban.",
                                             "style"     => 1,
-                                            //                        "url"   => "https://google.com",
                                             "custom_id" => "cancel_ban+" . $discord_id_ban
                                         ]
                                     ]
@@ -201,6 +210,144 @@ class Interaction extends DiscordMessage
 
             return false;
         }
+    }
+
+
+    private function gang_request(In $interaction)
+    {
+
+        $fields = [
+            [
+                'name'  => 'Gang Member Registration Form',
+                'value' => 'Add a minimum of 10 and a maximum of 15 names of gang members. For each, write the full name, age, and Discord ID. Specify for each whether they are currently in the gang on the server or not, and whether they have a whitelist or not. Bosses and co-bosses over 16 are mandatory!'
+            ],
+            [
+                'name'  => 'CID Submission Requirement',
+                'value' => 'Please specify the CID of each player in this field. Without this, you will not receive access in the game, and tickets on the subject will not receive a response if the CID is not entered here.'
+            ],
+            [
+                'name'  => 'Gang Selection and Customization',
+                'value' => 'Choose from the available options the gang you desire. The chosen gang includes pre-defined color, neighborhood, status, etc., and the options before you are the currently available ones. For questions or extreme cases, please open a support ticket.'
+            ],
+            [
+                'name'  => 'Approval Notification for Crime Server Access',
+                'value' => 'If approved, you will be notified and receive invitations to the crime server, along with corresponding roles. If not approved, you will also be informed.'
+            ]
+        ];
+
+        $select = StringSelect::new();
+        foreach (DB::connection('second_db')->table('gangs_data')->where('available', '=', true)->get() as $gang) {
+            $select->addOption(Option::new(ucfirst($gang->name), $gang->name . ' - ' . $gang->color_name))
+                   ->setCustomId($gang->name);
+        }
+
+        $request = GangCreationRequest::where("discord_id", '=', $interaction->user->id)->first();
+
+        if (isset($request->channel_id)) {
+            $builder = $this->messageSummaryRequest($interaction);
+            $interaction->guild->channels->get('id', $request->channel_id);
+            $interaction->respondWithMessage($builder->setContent("You Already Have Exists Request.\n"), true);
+
+            return false;
+        }
+
+        $embed = $this->embed($this->client, $fields, 'Choose Gang');
+
+        $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed)->addComponent($select), true);
+
+        $select->setListener(function (In $interaction, Collection $options) {
+            foreach ($options as $option) {
+                $fields = [
+                    ['name' => 'Chosen Gang', 'value' => $option->getValue()],
+                    ['name' => 'Request By', 'value' => "<@{$interaction->user->id}>"],
+                ];
+
+                GangCreationRequest::updateOrCreate(['discord_id' => $interaction->user->id], [
+                    'gang_name'  => $option->getLabel(),
+                    'boss'       => null,
+                    'co_boss'    => null,
+                    'members'    => null,
+                    'channel_id' => null
+                ]);
+
+                $actionToTake = [
+                    [
+                        'name'  => 'Command Usage',
+                        'value' => 'Please use the following command to register gang members:'
+                    ],
+                    [
+                        'name'  => 'Command Syntax',
+                        'value' => '/gangmembers [boss_id] [co_boss_id] [member-1] [member-2] ... [member-10]'
+                    ],
+                    [
+                        'name'  => 'Replace [boss]',
+                        'value' => 'Replace [boss] with the Discord Tag of the gang boss.'
+                    ],
+                    [
+                        'name'  => 'Replace [co_boss]',
+                        'value' => 'Replace [co_boss] with the Discord Tag of the co-boss.'
+                    ],
+                    [
+                        'name'  => 'Replace [member-1] to [member-10]',
+                        'value' => 'Replace [member-1] to [member-10] with the Discord Tags of the remaining gang members. Include at least 10 Tags and up to a maximum of 15 Tags.'
+                    ],
+                    ['name' => 'Separation', 'value' => 'Ensure each ID is separated by a space.'],
+                    [
+                        'name'  => 'Execution',
+                        'value' => 'Once all IDs are correctly entered, execute the command to register the gang members.'
+                    ]
+                ];
+                $embed = $this->embed($this->client, $fields, 'Request Begin ');
+                $embed2 = $this->embed($this->client, $actionToTake, 'Add You Gang Members!');
+                $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true);
+                $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed2), true);
+                $interaction->acknowledge();
+            }
+        }, $this->discord);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private function check_update_roles(In $interaction): bool
+    {
+        $builder = $this->messageSummaryRequest($interaction);
+        $request = GangCreationRequest::where('discord_id', '=',
+            $interaction->user->id)->first();
+        $talkTo = false;
+
+        foreach (explode(',', $request->members) as $key => $member) {
+            $roles = $interaction->guild->members->get('id', $member)->roles;
+            if ( !array_key_exists(1192227507508871349, $roles->toArray())) {
+                $talkTo = true;
+            }
+        }
+
+
+        if ($talkTo) {
+            $action = ActionRow::new();
+            $button = Button::new(Button::STYLE_PRIMARY)->setCustomId('check_update_roles');
+            $button->setLabel('Check Updates Roles For Members');
+            $action->addComponent($button);
+            $builder->addComponent($action);
+        }
+
+        $name = $request->gang_name;
+        $status = !$talkTo ? '🟢' : '🟠';
+
+        $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+
+        $interaction->channel->setPermissions($guild->members->get('id', $interaction->user->id),
+            ['view_channel', 'send_messages', 'attach_files', 'add_reactions'])->done();
+        $interaction->channel->name = $interaction->user->displayname . '-' . $name . $status;
+        $guild->channels->save($interaction->channel);
+
+
+        $interaction->message->delete();
+        $interaction->channel->sendMessage($builder)->done();
+        $interaction->acknowledge();
+
+        return true;
     }
 
 }

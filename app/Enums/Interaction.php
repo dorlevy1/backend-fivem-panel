@@ -10,4 +10,6 @@ enum Interaction: string
     case ADD_KICK = 'add_kick';
     case ADD_WARN = 'add_warn';
     case ADD_ANNOUNCE = 'add_announce';
+    case GANG_REQUEST = 'gang_request';
+    case CHECK_UPDATE_ROLES = 'check_update_roles';
 }

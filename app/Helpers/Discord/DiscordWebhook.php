@@ -10,14 +10,16 @@ class DiscordWebhook
     public DiscordAPI $api;
 
     public string $type;
+    public string $id;
 
     public array $message;
 
-    public function __construct($type, $message)
+    public function __construct($type, $message, $id = null)
     {
         $this->api = new DiscordAPI();
         $this->type = $type;
         $this->message = $message;
+        $this->id = $id;
 
         switch ($type) {
             case Webhook::BAN->value:
@@ -30,24 +32,10 @@ class DiscordWebhook
                 return $this->warnWebhook($message);
             case Webhook::REDEEM->value:
                 return $this->redeemWebhook($message);
-        }
-    }
-
-
-    public function send()
-    {
-
-        switch ($this->type) {
-            case Webhook::BAN->value:
-                return $this->banWebhook($this->message);
-            case Webhook::KICKS->value:
-                return $this->kickWebhook($this->message);
-            case Webhook::ANNOUNCE->value:
-                return $this->announceWebhook($this->message);
-            case Webhook::WARNS->value:
-                return $this->warnWebhook($this->message);
-            case Webhook::REDEEM->value:
-                return $this->redeemWebhook($this->message);
+            case Webhook::GANG_CREATION->value:
+                return $this->gangCreationWebhook($message);
+            case Webhook::PRIVATE_USER->value:
+                return $this->sendPrivateMessage($message);
         }
     }
 
@@ -74,5 +62,15 @@ class DiscordWebhook
     public function redeemWebhook($message)
     {
         return $this->api->sendMessage($message, ['type' => 'webhook', 'name' => 'redeem-code']);
+    }
+
+    public function gangCreationWebhook($message)
+    {
+        return $this->api->sendMessage($message, ['type' => 'webhook', 'name' => 'gang-creation']);
+    }
+
+    public function sendPrivateMessage($message)
+    {
+        return $this->api->sendMessage($message, ['type' => 'user', 'id' => $this->id]);
     }
 }
