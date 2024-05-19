@@ -37,16 +37,8 @@ class DiscordBotCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): void
     {
-        //        $client->createButtonMessage(['id' => 'invitation', 'label' => 'Start Authorization']);
-        //        $client->createEmbed(
-        //            [
-        //                'id'          => 'invitation',
-        //                'title'       => 'DDL Panel',
-        //                'description' => 'You\'ve got an invitation!',
-        //                'fields'      => $fields
-        //            ]);
         new Discord();
     }
 }
