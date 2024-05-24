@@ -6,21 +6,23 @@ namespace App\Repositories;
 use AllowDynamicProperties;
 use App\Events\DatabaseChange;
 use App\Helpers\Discord\DiscordMessage;
+use App\Message;
 use App\Models\Player;
 use App\Models\Warn;
 
-#[AllowDynamicProperties] class WarnRepository
+#[AllowDynamicProperties] class WarnRepository extends Message
 {
+
 
     protected Warn $warn;
     protected DatabaseChange $notify;
     protected DatabaseChange $inGameNotify;
 
+
     public function __construct(Warn $warn)
     {
         $this->warn = $warn;
         $this->notify = new DatabaseChange('warnsUpdate', 'my-event');
-        $this->discordMessage = new DiscordMessage();
 
     }
 
@@ -71,7 +73,7 @@ use App\Models\Warn;
         ];
 
 
-        $components['components'] = $this->discordMessage->createButtonComponent([
+        $components['components'] = $this->createButtonComponent([
             [
                 'type'      => 2,
                 'label'     => "Click To Give Ban.",
@@ -81,7 +83,7 @@ use App\Models\Warn;
         ]);
 
 
-        $this->discordMessage->createMessage([
+        $this->createMessage([
             'adminDiscordId' => $user->discord_id,
             'title'          => 'Warn Added',
             'description'    => "<@{$user->discord_id}> Give Warn To <@{$discord_id}>!",

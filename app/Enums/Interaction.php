@@ -12,4 +12,6 @@ enum Interaction: string
     case ADD_ANNOUNCE = 'add_announce';
     case GANG_REQUEST = 'gang_request';
     case CHECK_UPDATE_ROLES = 'check_update_roles';
+    case APPROVE_GANG = 'approve_gang';
+    case DECLINE_GANG = 'decline_gang';
 }

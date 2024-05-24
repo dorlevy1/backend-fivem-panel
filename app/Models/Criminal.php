@@ -13,6 +13,11 @@ class Criminal extends Model
     protected $connection = 'second_db';
 
 
+    protected $fillable = ['identifier', 'name', 'organization', 'stats'];
+
+    const UPDATED_AT = null;
+    const CREATED_AT = null;
+
     public function gang()
     {
         return $this->belongsTo(Gang::class, 'name', 'organization');

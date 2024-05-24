@@ -6,12 +6,13 @@ namespace App\Repositories;
 use AllowDynamicProperties;
 use App\Events\DatabaseChange;
 use App\Helpers\Discord\DiscordMessage;
+use App\Message;
 use App\Models\Ban;
 use App\Models\Player;
 use App\Notifications\WebhookNotification;
 use Illuminate\Http\Request;
 
-#[AllowDynamicProperties] class BanRepository
+#[AllowDynamicProperties] class BanRepository extends Message
 {
 
     protected Ban $bans;
@@ -22,7 +23,6 @@ use Illuminate\Http\Request;
     {
         $this->bans = $bans;
         $this->notify = new DatabaseChange('bansUpdate', 'my-event');
-        $this->discordMessage = new DiscordMessage();
     }
 
     public function getBans()
@@ -83,21 +83,9 @@ use Illuminate\Http\Request;
                     ]
                 ]
             ],
-            //            [
-            //                "type"       => 1,
-            //                "components" => [
-            //                    [
-            //                        "type"      => 6,
-            //                        "label"     => "Click To Cancel Ban.",
-            //                        "style"     => 1,
-            //                        //                        "url"   => "https://google.com",
-            //                        "custom_id" => "cancdel_ban"
-            //                    ],
-            //                ]
-            //            ],
         ];
 
-        $this->discordMessage->createMessage([
+        $this->createMessage([
             'adminDiscordId' => $user->discord_id,
             'title'          => 'Ban Added',
             'description'    => "<@{$user->discord_id}> Give Ban To <@{$discord_id}>!",

@@ -49,20 +49,6 @@ class DiscordAPI
         ];
     }
 
-    public function removeMessage($channel_id, $message_id)
-    {
-        try {
-            $endpoint = Discord::DELETE_MESSAGE->endpoint(['channelId' => $channel_id, 'messageId' => $message_id]);
-
-            $data = $this->api->apiRequest("{$endpoint}", null,
-                env('DISCORD_BOT_TOKEN'), 'Bot', true, 'DELETE');
-
-            return $data->id;
-        } catch (\ErrorException $e) {
-            return $e->getMessage();
-        }
-    }
-
     private function getChannel($user)
     {
         try {

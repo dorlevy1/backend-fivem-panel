@@ -6,23 +6,8 @@ use App\Http\Middleware\SubdomainEnsure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::domain('{subdomain}.' . env('APP_URL'))->middleware([SubdomainEnsure::class])->group(function () {
-    Route::get('test', function ($subdomain) {
-        dd($subdomain);
-        $this->inGameNotify = new DatabaseChange('inGame.215978', 'my-event');
-
-        $this->inGameNotify->setData([
-            'type'    => 'KICK',
-            'message' => 'test',
-            'timeout' => 10000,
-        ]);
-        dd($this->inGameNotify->send($this->inGameNotify));
-    });
-});
-
 Route::get('/test', function (Request $request) {
-    //    $helper = new \App\Helpers\Discord\DiscordAPI();
-    //    $helper->createWebhookChannels();
+    return \App\Models\GangCreationRequest::all();
 });
 
 

@@ -81,8 +81,7 @@ class Permissions extends DiscordCommand implements Command
         } else {
             $interaction->respondWithMessage(MessageBuilder::new()->setContent("You Don't Have Any Permissions For That Use..\nThis Log Sent to the Owner."),
                 true);
-            $this->client->guilds->get('id',
-                env('DISCORD_BOT_GUILD'))->owner->sendMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}> Tried To Use The Permissions Command"));
+            $interaction->guild->owner->sendMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}> Tried To Use The Permissions Command"));
         }
 
         //        return;

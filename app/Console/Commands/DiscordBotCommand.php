@@ -8,7 +8,7 @@ use App\Helpers\Discord\Commands\Update;
 use App\Helpers\Discord\Discord;
 use App\Helpers\Discord\DiscordBot;
 use App\Helpers\Discord\DiscordCommand;
-use App\Helpers\Discord\Features\CreateGangButton;
+use App\Helpers\Discord\Features\JoinToGang;
 use App\Helpers\Discord\Interaction;
 use Discord\Discord as DiscordPHP;
 use Discord\Exceptions\IntentException;

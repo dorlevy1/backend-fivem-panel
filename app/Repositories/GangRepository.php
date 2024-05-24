@@ -41,7 +41,7 @@ class GangRepository
             }
             $gang->owner = $owner->charinfo->firstname . ' ' . $owner->charinfo->lastname . ' | ' . $gang->owner;
             $gang->zones = count(json_decode($gang->zones, 1));
-            $gang->amountPlayers = count($gang->players);
+            $gang->amountPlayers = $gang->players ? count($gang->players) : 0;
             $gang->inventory = $this->inventory($gang->name);
             $gangs[] = $gang;
         }

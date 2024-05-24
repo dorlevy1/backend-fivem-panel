@@ -4,7 +4,9 @@ namespace App\Helpers\Discord\Commands;
 
 use App\Command;
 use App\Helpers\Discord\DiscordCommand;
+use App\Models\Criminal;
 use App\Models\GangCreationRequest;
+use App\Models\Player;
 use App\Models\Webhook;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
@@ -62,8 +64,15 @@ class GangMembers extends DiscordCommand implements Command
             }
             $exists = $roleExists ? ' ' . '✅' : ' ' . '❌';
             $ucfirst = ucfirst($option->name);
-            $text .= "{$ucfirst} -  <@{$option->value}> {$exists}\n\n";
+            $text .= "{$ucfirst} -  <@{$option->value}> ";
+
+
+            $player = Player::all()->first(function ($player) use ($option) {
+                return $player->metadata->discord === 'discord:' . $option->value;
+            });
+            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
         }
+
         $boss = $interaction->data->options['boss']->value;
         $co_boss = $interaction->data->options['co_boss']->value;
         $options = $interaction->data->options;
@@ -132,6 +141,19 @@ class GangMembers extends DiscordCommand implements Command
                     }
 
                     $channel->sendMessage($builder)->done();
+                    $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+
+                    if (empty($talkTo)) {
+                        $action = ActionRow::new();
+                        $button1 = Button::new(Button::STYLE_DANGER)->setCustomId('decline_gang+' . $interaction->user->id);
+                        $button1->setLabel('Decline');
+                        $button2 = Button::new(Button::STYLE_SUCCESS)->setCustomId('approve_gang+' . $interaction->user->id);
+                        $button2->setLabel('Approve');
+                        $action->addComponent($button1);
+                        $action->addComponent($button2);
+                        $builder->addComponent($action);
+                    }
+                    empty($talkTo) && $guild->channels->get('name', 'gang-requests')->sendMessage($builder);
 
                     $content = empty($talkTo) ? "<#$channel->id> Has Created Successfully." : "<#$channel->id> Has Created Successfully.\n**Please Notice!**\nYou have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button in <#$channel->id>";
 
@@ -165,50 +187,6 @@ class GangMembers extends DiscordCommand implements Command
             ->addOption($this->addOption('member-14', 'Member No 14', Option::USER))
             ->addOption($this->addOption('member-15', 'Member No 15', Option::USER))
             ->toArray());
-    }
-
-    private function updateRequestGang(In $interaction)
-    {
-        $request = GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first();
-
-        if ( !$request) {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent("You Need To Create Request First."),
-                true);
-
-            return false;
-        }
-        if (is_null($request->members)) {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent("You Have not insert any members to your Gang request\n Please add with \gangmembers"),
-                true);
-
-            return false;
-        }
-
-        $roleExists = false;
-        $talkTo = '';
-        $text = '';
-        $rolesBoss = $interaction->guild->members->get('id', $request->boss)->roles;
-        $rolesCo = $interaction->guild->members->get('id', $request->co_boss)->roles;
-        $exists = array_key_exists(1192227507508871349, $rolesBoss->toArray()) ? ' ' . '✅' : ' ' . '❌';
-        $existsCo = array_key_exists(1192227507508871349, $rolesCo->toArray()) ? ' ' . '✅' : ' ' . '❌';
-
-        $text .= "Boss -  <@{$request->boss}> {$exists}\n\n";
-        $text .= "Boss -  <@{$request->co_boss}> {$existsCo}\n\n";
-
-        foreach (explode(',', $request->members) as $key => $member) {
-            $roles = $interaction->guild->members->get('id', $member)->roles;
-            if (array_key_exists(1192227507508871349, $roles->toArray())) {
-                $roleExists = true;
-            } else {
-                $roleExists = false;
-                $talkTo .= "<@{$member}> ";
-            }
-            $exists = $roleExists ? ' ' . '✅' : ' ' . '❌';
-            $key = $key + 1;
-            $text .= "Member No.{$key} -  <@{$member}> {$exists}\n\n";
-        }
-        $embed = $this->createSummaryRequestEmbed($this->s, $interaction, $text, $roleExists, $talkTo);
-
     }
 
 }

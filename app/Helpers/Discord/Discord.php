@@ -3,7 +3,7 @@
 namespace App\Helpers\Discord;
 
 use AllowDynamicProperties;
-use App\Helpers\Discord\Features\CreateGangButton;
+use App\Helpers\Discord\Features\JoinToGang;
 use Discord\Discord as DiscordPHP;
 use Discord\Parts\Channel\Message;
 use Discord\WebSockets\Event;
@@ -12,15 +12,18 @@ use Discord\WebSockets\Event;
 {
 
     private string $globalPathCommands = '\App\Helpers\Discord\Commands\\';
+    private string $globalPathFeatures = '\App\Helpers\Discord\Features\\';
     private string $directoryCommands = __DIR__ . '/Commands';
+    private string $featureDirectory = __DIR__ . '/Features';
 
     public function __construct()
     {
         parent::__construct();
         $this->entries = scandir($this->directoryCommands);
+        $this->features = scandir($this->featureDirectory);
 
         $this->client->on('init', function (DiscordPHP $d) {
-            new CreateGangButton($d, $this->client);
+            $this->generate_features($d);
             $this->generate_commands($d);
 
             $d->on(Event::MESSAGE_CREATE, function (Message $message, DiscordPHP $discord) {
@@ -28,11 +31,25 @@ use Discord\WebSockets\Event;
             });
 
             $d->on(Event::INTERACTION_CREATE, function ($interaction, DiscordPHP $discordPHP) {
-                new \App\Helpers\Discord\Interaction($this->client, $discordPHP, $interaction);
+                new Interaction($this->client, $discordPHP, $interaction);
             });
         });
 
         $this->client->run();
+    }
+
+    private function generate_features($d): void
+    {
+
+        foreach ($this->features as $feature) {
+            if ($feature !== '.' && $feature !== '..') {
+                $path = $this->featureDirectory . '/' . $feature;
+                if (is_file($path)) {
+                    $class = $this->globalPathFeatures . str_replace('.php', '', $feature);
+                    new $class($d, $this->client);
+                }
+            }
+        }
     }
 
     private function generate_commands($d): void

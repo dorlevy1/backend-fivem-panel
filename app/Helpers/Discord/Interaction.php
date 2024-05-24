@@ -2,9 +2,12 @@
 
 namespace App\Helpers\Discord;
 
+use App\Helpers\API;
 use App\Models\Admin;
 use App\Models\Ban;
 use App\Enums\Interaction as InteractionEnum;
+use App\Models\Criminal;
+use App\Models\Gang;
 use App\Models\GangCreationRequest;
 use App\Models\Player;
 use App\Models\Webhook;
@@ -27,10 +30,10 @@ class Interaction extends DiscordMessage
     /**
      * @throws \Exception
      */
-    public function __construct(DiscordPHP $client, DiscordPHP $discord, $interaction)
+    public function __construct(DiscordPHP $client, DiscordPHP $discord, In $interaction)
     {
         parent::__construct($client);
-        $name = explode('+', $interaction['data']['custom_id'])[0];
+        $name = explode('+', $interaction->data->custom_id)[0];
 
         $this->discord = $discord;
         $this->client = $client;
@@ -40,9 +43,27 @@ class Interaction extends DiscordMessage
             InteractionEnum::ADD_BAN->value => $this->add_ban($interaction),
             InteractionEnum::GANG_REQUEST->value => $this->gang_request($interaction),
             InteractionEnum::CHECK_UPDATE_ROLES->value => $this->check_update_roles($interaction),
+            InteractionEnum::APPROVE_GANG->value => $this->approve_gang($interaction),
             default => true,
         };
 
+    }
+
+    public function removeMessage($channel_id, $message_id)
+    {
+        try {
+            $endpoint = \App\Enums\Discord::DELETE_MESSAGE->endpoint([
+                'channelId' => $channel_id,
+                'messageId' => $message_id
+            ]);
+
+            $data = (new API())->apiRequest("{$endpoint}", null,
+                env('DISCORD_BOT_TOKEN'), 'Bot', true, 'DELETE');
+
+            return $data->id;
+        } catch (\ErrorException $e) {
+            return $e->getMessage();
+        }
     }
 
 
@@ -243,10 +264,11 @@ class Interaction extends DiscordMessage
 
         $request = GangCreationRequest::where("discord_id", '=', $interaction->user->id)->first();
 
-        if (isset($request->channel_id)) {
+        if (isset($request->channel_id) && $interaction->guild->channels->get('id', $request->channel_id)) {
             $builder = $this->messageSummaryRequest($interaction);
             $interaction->guild->channels->get('id', $request->channel_id);
-            $interaction->respondWithMessage($builder->setContent("You Already Have Exists Request.\n"), true);
+            $interaction->respondWithMessage($builder->setContent("You Already Have Exists Request.\n<#{$request->channel_id}>"),
+                true);
 
             return false;
         }
@@ -323,9 +345,9 @@ class Interaction extends DiscordMessage
             }
         }
 
+        $action = ActionRow::new();
 
         if ($talkTo) {
-            $action = ActionRow::new();
             $button = Button::new(Button::STYLE_PRIMARY)->setCustomId('check_update_roles');
             $button->setLabel('Check Updates Roles For Members');
             $action->addComponent($button);
@@ -341,8 +363,79 @@ class Interaction extends DiscordMessage
             ['view_channel', 'send_messages', 'attach_files', 'add_reactions'])->done();
         $interaction->channel->name = $interaction->user->displayname . '-' . $name . $status;
         $guild->channels->save($interaction->channel);
+        $interaction->message->delete();
+        $interaction->channel->sendMessage($builder)->done();
+
+        if ( !$talkTo) {
+            $button1 = Button::new(Button::STYLE_SUCCESS)->setCustomId('decline_gang+' . $interaction->user->id);
+            $button1->setLabel('Decline');
+            $button2 = Button::new(Button::STYLE_DANGER)->setCustomId('approve_gang+' . $interaction->user->id);
+            $button2->setLabel('Approve');
+            $action->addComponent($button1);
+            $action->addComponent($button2);
+            $builder->addComponent($action);
+        }
+
+        !$talkTo && $guild->channels->get('name', 'gang-requests')->sendMessage($builder);
+
+        $interaction->acknowledge();
+
+        return true;
+    }
+
+    private function approve_gang(In $interaction): bool
+    {
+
+        if ( !($interaction->member->roles->get('id', 1218998274791440415))) {
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent("You Don't Have Any Permissions For That Use..\nThis Log Sent to the Owner."),
+                true);
+            $interaction->guild->owner->sendMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}> Tried To Confirm Gang"));
+
+            return false;
+        }
+
+        $discord_request = explode('+', $interaction->data->custom_id)[1];
+        $gangRequest = GangCreationRequest::where('discord_id', '=', $discord_request)->first();
+        $gangData = DB::connection('second_db')->table('gangs_data')->where('name', '=',
+            strtolower($gangRequest->gang_name))->first();
+
+        $gangMembers = explode(',', $gangRequest->members);
+        $gangMembers[] = $gangRequest->boss;
+        $gangMembers[] = $gangRequest->co_boss;
+
+        foreach (Player::all() as $player) {
+            foreach ($gangMembers as $member) {
+                if ($player->metadata->discord === 'discord:' . $gangRequest->boss) {
+                    Gang::updateOrCreate(['name' => $gangData->name], [
+                        'name'    => $gangData->name,
+                        'owner'   => $player->citizenid,
+                        'zones'   => '[]',
+                        'picture' => '',
+                        'color'   => "#{$gangData->color_hex}",
+                    ]);
+                }
+                if ($player->metadata->discord === 'discord:' . $member) {
+                    Criminal::where('identifier', '=', $player->citizenid)->update(['organization' => $gangData->name]);
+                }
+            }
+        }
 
 
+        $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+
+        $request = GangCreationRequest::where('discord_id', '=',
+            $interaction->user->id)->first();
+
+        $ch = $guild->channels->get('id', $request->channel_id);
+
+        $fields = [
+            ['name' => 'Approved By', 'value' => "<@{$interaction->user->id}>"]
+        ];
+        $embed = $this->embed($this->client, $fields, 'Action Approved');
+        $interaction->user->id = $request->discord_id;
+        $builder = $this->messageSummaryRequest($interaction);
+        $builder->addEmbed($embed);
+        $ch->sendMessage(MessageBuilder::new()->addEmbed($embed))->done();
         $interaction->message->delete();
         $interaction->channel->sendMessage($builder)->done();
         $interaction->acknowledge();

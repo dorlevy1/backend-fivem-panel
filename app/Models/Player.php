@@ -16,13 +16,13 @@ class Player extends Model
     protected $connection = 'second_db';
 
 
-//    protected static function boot(): void
-//    {
-////        parent::boot();
-//
-//        //Any time this model is used, it will implement the StringifyGuidRule
-////        static::addGlobalScope(new StringifyScope());
-//    }
+    //    protected static function boot(): void
+    //    {
+    ////        parent::boot();
+    //
+    //        //Any time this model is used, it will implement the StringifyGuidRule
+    ////        static::addGlobalScope(new StringifyScope());
+    //    }
 
     public function inventory(): Attribute
     {
@@ -94,6 +94,17 @@ class Player extends Model
     public function scopeLastSevenDays(Builder $query): Builder
     {
         return $query->whereDate('created_at', '>', now()->subDays(7));
+    }
+
+    //    public function scopeBanned(Builder $query): Builder
+    //    {
+    //        return $query->whereHas('ban');
+    //    }
+
+    public function criminal()
+    {
+        return $this->belongsTo(Criminal::class, 'citizenid', 'citizenid');
+
     }
 
 }

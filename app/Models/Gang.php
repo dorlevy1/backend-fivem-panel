@@ -14,8 +14,12 @@ class Gang extends Model
     protected $table = 'organizations';
     protected $connection = 'second_db';
 
+    protected $fillable = ['name', 'owner', 'color', 'zones', 'picture'];
 
-    public function players()
+    const UPDATED_AT = null;
+    const CREATED_AT = null;
+
+    public function criminals()
     {
         return $this->hasMany(Criminal::class, 'organization', 'name');
     }
