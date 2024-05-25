@@ -2,23 +2,21 @@
 
 namespace App\Helpers\Discord\Features;
 
+use App\Feature;
 use App\Helpers\API;
-use App\Helpers\Discord\Client;
-use App\Helpers\Discord\Discord;
-use App\Helpers\Discord\DiscordBot;
 use App\Helpers\Discord\DiscordMessage;
 use App\Models\Webhook;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord as DiscordPHP;
-use Discord\Interaction;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Guild\Guild;
 
 
-class ReedemCode
+class RedeemCode implements Feature
 {
+
 
     public API $api;
     public DiscordMessage $message;
@@ -35,23 +33,20 @@ class ReedemCode
     }
 
 
-    public function createGangButtonChannel(Guild $guild): bool|string
+    public function createButtonChannel(Guild $guild): bool|string
     {
 
         try {
-            if ( !is_null($guild->channels->get('name', 'gang-requests'))) {
-                return false;
-            }
 
-            $embed = $this->message->embed($this->client, [], 'Gang Creation Area');
+            $embed = $this->message->embed($this->client, [], '');
             $builder = MessageBuilder::new();
             $ar = ActionRow::new();
             $submit = Button::new(Button::STYLE_PRIMARY,
-                'gang_request')->setLabel('Click To Apply Gang Request.');
+                'create_redeem_code')->setLabel('Create Redeem Code');
             $ar->addComponent($submit);
             $builder->addEmbed($embed);
             $builder->addComponent($ar);
-            $guild->channels->get('name', 'join-to-gang')->sendMessage($builder);
+            $guild->channels->get('name', 'create-redeem-code')->sendMessage($builder);
 
             return true;
         } catch (\ErrorException $e) {
@@ -60,23 +55,26 @@ class ReedemCode
 
     }
 
-    private function createJoinToGang(Guild $guild): void
+    public function createMainChannel(Guild $guild): void
     {
 
-        if ( !is_null($guild->channels->get('name', 'join-to-gang'))) {
+        if ( !is_null($guild->channels->get('name', 'create-redeem-code'))) {
             return;
         }
 
-        $category = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
+        $category = Webhook::where('name', '=', 'Redeem Code Area')->first()->channel_id;
+
 
         $channel = $guild->channels->create([
-            'name'      => 'Join-To-Gang',
+            'name'      => 'create-redeem-code',
             'type'      => Channel::TYPE_GUILD_TEXT,
             'parent_id' => $category,
             'nsfw'      => false
         ]);
 
-        $guild->channels->save($channel)->then(function (Channel $channel) {
+
+        $guild->channels->save($channel)->then(function (Channel $channel) use ($guild) {
+
             Webhook::updateOrCreate([
                 'name' => $channel->name
             ], [
@@ -84,6 +82,8 @@ class ReedemCode
                 'channel_id' => $channel->id,
                 'parent'     => false
             ]);
+
+            $this->createButtonChannel($guild);
 
             return $channel;
         })->done();
@@ -93,23 +93,22 @@ class ReedemCode
     public function handle(): void
     {
 
-        $this->createGangCat();
+        $this->createCat();
         $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
-        $this->createJoinToGang($guild);
-        $this->createGangButtonChannel($guild);
-        $this->createRequestsPage($guild);
+        $this->createMainChannel($guild);
+        $this->createLogPage($guild);
 
     }
 
-    private function createGangCat(): Guild|string
+    public function createCat(): Guild|string
     {
         try {
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
-            if ( !is_null($guild->channels->get('name', 'Gang Create Area'))) {
+            if ( !is_null($guild->channels->get('name', 'Redeem Code Area'))) {
                 return false;
             }
             $group = $guild->channels->create([
-                'name' => 'Gang Create Area',
+                'name' => 'Redeem Code Area',
                 'type' => Channel::TYPE_GUILD_CATEGORY,
             ]);
 
@@ -131,16 +130,20 @@ class ReedemCode
         }
     }
 
-    private function createRequestsPage(Guild $guild): void
+    public function createLogPage(Guild $guild): void
     {
         try {
-            if ( !is_null($guild->channels->get('name', 'gang-requests'))) {
+            $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
+
+            if ( !is_null($guild->channels->get('name', 'redeem-codes'))) {
                 return;
             }
 
-            $category = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
+            $category = Webhook::where('name', '=', 'DLPanel')->first()->channel_id;
+
+
             $channel = $guild->channels->create([
-                'name'      => 'Gang-Requests',
+                'name'      => 'redeem-codes',
                 'type'      => Channel::TYPE_GUILD_TEXT,
                 'parent_id' => $category,
                 'nsfw'      => false
@@ -155,12 +158,6 @@ class ReedemCode
                     'channel_id' => $channel->id,
                     'parent'     => false
                 ]);
-
-                $channel->setPermissions($guild->roles->get('name', '@everyone'),
-                    [], ['view_channel'])->done(function () use ($channel, $guild) {
-                    $channel->setPermissions($guild->roles->get('id', '1218998274791440415'), ['view_channel'],
-                        ['send_messages', 'attach_files', 'add_reactions'])->done();
-                });
             })->done();
 
             return;

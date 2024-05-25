@@ -16,7 +16,8 @@
     "laravel/tinker": "^2.9",
     "php-open-source-saver/jwt-auth": "^2.2",
     "pusher/pusher-php-server": "^7.2",
-    "team-reflex/discord-php": "dev-master"
+    "team-reflex/discord-php": "dev-master",
+    "ext-gd": "*"
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",

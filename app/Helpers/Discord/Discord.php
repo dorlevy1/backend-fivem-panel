@@ -3,7 +3,6 @@
 namespace App\Helpers\Discord;
 
 use AllowDynamicProperties;
-use App\Helpers\Discord\Features\JoinToGang;
 use Discord\Discord as DiscordPHP;
 use Discord\Parts\Channel\Message;
 use Discord\WebSockets\Event;

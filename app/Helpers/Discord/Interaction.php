@@ -17,12 +17,16 @@ use Discord\Builders\Components\Button;
 use Discord\Builders\Components\Option;
 use Discord\Builders\Components\StringSelect;
 use Discord\Builders\Components\TextInput;
+use Discord\Builders\Components\UserSelect;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
+use Discord\Parts\User\Member;
 use Illuminate\Http\Request;
 use Discord\Parts\Interactions\Interaction as In;
 use Discord\Discord as DiscordPHP;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Sleep;
 
 class Interaction extends DiscordMessage
 {
@@ -44,6 +48,12 @@ class Interaction extends DiscordMessage
             InteractionEnum::GANG_REQUEST->value => $this->gang_request($interaction),
             InteractionEnum::CHECK_UPDATE_ROLES->value => $this->check_update_roles($interaction),
             InteractionEnum::APPROVE_GANG->value => $this->approve_gang($interaction),
+            InteractionEnum::DECLINE_GANG->value => $this->decline_gang($interaction),
+            InteractionEnum::REDEEM_CODE->value => $this->create_redeem_code($interaction),
+            InteractionEnum::REDEEM_INSERT_CASH->value => $this->redeem_insert($interaction, 'Cash', ''),
+            InteractionEnum::REDEEM_INSERT_ITEMS->value => $this->redeem_insert($interaction, 'Items', ''),
+            InteractionEnum::REDEEM_INSERT_WEAPONS->value => $this->redeem_insert($interaction, 'Weapons', ''),
+            InteractionEnum::REDEEM_INSERT_VEHICLES->value => $this->redeem_insert($interaction, 'Vehicles', ''),
             default => true,
         };
 
@@ -359,8 +369,12 @@ class Interaction extends DiscordMessage
 
         $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
 
+        $roles = $talkTo ?
+            [['view_channel', 'send_messages', 'attach_files', 'add_reactions'], []]
+            : [['view_channel'], ['send_messages', 'attach_files', 'add_reactions']];
+
         $interaction->channel->setPermissions($guild->members->get('id', $interaction->user->id),
-            ['view_channel', 'send_messages', 'attach_files', 'add_reactions'])->done();
+            ...$roles)->done();
         $interaction->channel->name = $interaction->user->displayname . '-' . $name . $status;
         $guild->channels->save($interaction->channel);
         $interaction->message->delete();
@@ -383,9 +397,8 @@ class Interaction extends DiscordMessage
         return true;
     }
 
-    private function approve_gang(In $interaction): bool
+    private function getDataRequest(In $interaction)
     {
-
         if ( !($interaction->member->roles->get('id', 1218998274791440415))) {
             $interaction->respondWithMessage(MessageBuilder::new()->setContent("You Don't Have Any Permissions For That Use..\nThis Log Sent to the Owner."),
                 true);
@@ -398,6 +411,20 @@ class Interaction extends DiscordMessage
         $gangRequest = GangCreationRequest::where('discord_id', '=', $discord_request)->first();
         $gangData = DB::connection('second_db')->table('gangs_data')->where('name', '=',
             strtolower($gangRequest->gang_name))->first();
+
+        return (object)['gangRequest' => $gangRequest, 'gangData' => $gangData];
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private function approve_gang(In $interaction): bool
+    {
+
+        $data = $this->getDataRequest($interaction);
+        $gangData = $data->gangData;
+        $gangRequest = $data->gangRequest;
+
 
         $gangMembers = explode(',', $gangRequest->members);
         $gangMembers[] = $gangRequest->boss;
@@ -415,7 +442,8 @@ class Interaction extends DiscordMessage
                     ]);
                 }
                 if ($player->metadata->discord === 'discord:' . $member) {
-                    Criminal::where('identifier', '=', $player->citizenid)->update(['organization' => $gangData->name]);
+                    Criminal::where('identifier', '=',
+                        $player->citizenid)->update(['organization' => $gangData->name]);
                 }
             }
         }
@@ -423,22 +451,199 @@ class Interaction extends DiscordMessage
 
         $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
 
-        $request = GangCreationRequest::where('discord_id', '=',
-            $interaction->user->id)->first();
-
-        $ch = $guild->channels->get('id', $request->channel_id);
+        $ch = $guild->channels->get('id', $gangRequest->channel_id);
 
         $fields = [
             ['name' => 'Approved By', 'value' => "<@{$interaction->user->id}>"]
         ];
-        $embed = $this->embed($this->client, $fields, 'Action Approved');
-        $interaction->user->id = $request->discord_id;
+
+        $embed = $this->embed($this->client, $fields, 'Action Decline');
+        $member = $guild->members->get('id', $gangRequest->discord_id);
+        $ch->name = $member->user->displayname . '-!Approved!🟢';
+        $ch->setPermissions($guild->members->get('id', $interaction->user->id),
+            ['view_channel'], ['send_messages'])->done();
+        $guild->channels->save($ch);
+
+
+        return $this->sendAnsweredMessageGangRequest($gangRequest, $interaction, $embed, $ch);
+    }
+
+    private function decline_gang(In $interaction): true
+    {
+        $data = $this->getDataRequest($interaction);
+        $gangRequest = $data->gangRequest;
+
+        $interaction->showModal('Add Reason', 'reason_modal',
+            [
+                ActionRow::new()->addComponent(TextInput::new("Reason",
+                    TextInput::STYLE_PARAGRAPH)->setCustomId('reason'))
+            ],
+            function (In $interaction, Collection $components) use ($gangRequest) {
+                $reason = $components['reason']['value'];
+
+                $fields = [
+                    ['name' => 'Decline By', 'value' => "<@{$interaction->user->id}>"],
+                    ['name' => '**Reason**', 'value' => $reason],
+                ];
+                $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+
+                $ch = $guild->channels->get('id', $gangRequest->channel_id);
+
+                $embed = $this->embed($this->client, $fields, 'Action Decline');
+                $member = $guild->members->get('id', $gangRequest->discord_id);
+                $ch->name = $member->user->displayname . '-!Decline!🔴';
+                $ch->setPermissions($guild->members->get('id', $interaction->user->id),
+                    ['view_channel'], ['send_messages'])->done();
+                $guild->channels->save($ch);
+
+                return $this->sendAnsweredMessageGangRequest($gangRequest, $interaction, $embed, $ch);
+            });
+
+        return true;
+    }
+
+    /**
+     * @param $gangRequest
+     * @param In $interaction
+     * @param \Discord\Parts\Part|\Discord\Repository\AbstractRepository $embed
+     * @param \Discord\Parts\Channel\Channel|null $ch
+     *
+     * @return true
+     */
+    private function sendAnsweredMessageGangRequest(
+        $gangRequest,
+        In $interaction,
+        \Discord\Parts\Part|\Discord\Repository\AbstractRepository $embed,
+        ?\Discord\Parts\Channel\Channel $ch
+    ): bool {
+        $interaction->user->id = $gangRequest->discord_id;
         $builder = $this->messageSummaryRequest($interaction);
         $builder->addEmbed($embed);
         $ch->sendMessage(MessageBuilder::new()->addEmbed($embed))->done();
         $interaction->message->delete();
         $interaction->channel->sendMessage($builder)->done();
         $interaction->acknowledge();
+
+        return true;
+    }
+
+
+
+    
+    private function create_redeem_code(In $interaction)
+    {
+
+        $builder = MessageBuilder::new();
+        $select = UserSelect::new()->setPlaceholder('Select Member')->setMinValues(1)->setMaxValues(1)->setCustomId('select_user');
+        $builder->addComponent($select);
+
+        $select->setListener(function (In $in) {
+            $member = $in->guild->members->get('id', $in->data->values[0]);
+
+            $this->chooseRedeemCode($in, $member);
+
+        }, $this->discord);
+
+        $interaction->respondWithMessage($builder, true);
+        $interaction->acknowledge();
+
+        return true;
+    }
+
+    private function chooseRedeemCode(In $in, Member $member): void
+    {
+        $builder = MessageBuilder::new();
+        $select = StringSelect::new()->setPlaceholder('Select One Of The Choices');
+        $select->addOption(Option::new('Items', 'items'));
+        $select->addOption(Option::new('Weapons', 'weapons'));
+        $select->addOption(Option::new('Vehicles', 'vehicles'));
+        $select->addOption(Option::new('Cash', 'cash'));
+        $select->setMinValues(1)->setMaxValues(1);
+        $builder->addComponent($select);
+        $in->sendFollowUpMessage($builder, true);
+
+        $select->setListener(function (In $i) use ($member) {
+            if ($i->data->values[0] !== 'vehicles' || $i->data->values[0] !== 'cash') {
+                $contents = File::get(base_path("{$i->data->values[0]}.json"));
+                $json = json_decode($contents);
+
+                $items = "";
+                $count = 0;
+                $builder = MessageBuilder::new();
+                foreach ($json as $key => $item) {
+                    if ($i->data->values[0] === 'vehicles') {
+                        $item->label = $item->name;
+                    }
+                    if (strlen($items) >= 950) {
+                        $fields = [
+                            ['name' => '## ' . ucfirst($i->data->values[0]) . ' Data ##', 'value' => $items]
+                        ];
+                        $embed = $this->embed($this->client, $fields, 'Items Data');
+                        $builder->addEmbed($embed);
+                        $count += 1;
+                        $items = "";
+
+                        if ($count === 5) {
+                            $i->sendFollowUpMessage($builder, true);
+                            $builder = MessageBuilder::new();
+                            $count = 0;
+                        }
+                    }
+                    $items .= "**" . $item->label . "**  - " . $key . "\n";
+                }
+                $this->sendInsertRedeemType($i, $member);
+            }
+        }, $this->discord);
+    }
+
+    private function sendInsertRedeemType(In $i, Member $member): void
+    {
+        $builder = MessageBuilder::new();
+        $ar = ActionRow::new();
+        $button = Button::new(Button::STYLE_PRIMARY)->setCustomId('redeem_insert_' . $i->data->values[0] . '+' . $member->user->id);
+        $button->setLabel('Add ' . ucfirst($i->data->values[0]));
+        $ar->addComponent($button);
+        $builder->addComponent($ar);
+        $i->sendFollowUpMessage($builder, true);
+        $i->acknowledge();
+    }
+
+    private function redeem_insert(In $interaction, $type, $label)
+    {
+        $discord_id = explode('+', $interaction->data->custom_id)[1];
+
+        $interaction->showModal('Add ' . $type . ' Codes', 'reason_modal',
+            [
+                ActionRow::new()->addComponent(TextInput::new($label,
+                    TextInput::STYLE_PARAGRAPH)->setMaxLength(4000)->setCustomId('weapons'))
+            ],
+            function (In $in, Collection $components) use ($discord_id, $type) {
+                $reason = explode(',', $components['weapons']['value']);
+                $member = $in->guild->members->get('id', $discord_id);
+
+                $fields = [
+                    ['name' => '', 'value' => str_replace(',', "\n", $components['weapons']['value'])],
+                ];
+
+                $embed = $this->embed($this->discord, $fields, 'Chosen ' . $type);
+                $builder = MessageBuilder::new()->addEmbed($embed);
+                $ar = ActionRow::new();
+                $button1 = Button::new(Button::STYLE_SUCCESS)->setCustomId('done' . '+' . $member->user->id);
+                $button1->setLabel('Finish The Redeem');
+                $button2 = Button::new(Button::STYLE_SECONDARY)->setCustomId('add_more' . '+' . $member->user->id);
+                $button2->setLabel('Add More');
+                $ar->addComponent($button1);
+                $ar->addComponent($button2);
+                $builder->addComponent($ar);
+                $in->respondWithMessage($builder, true)->done();
+
+                $button2->setListener(function (In $interaction) use ($in, $member) {
+                    $this->chooseRedeemCode($in, $member);
+                }, $this->discord);
+
+                $in->acknowledge();
+
+            });
 
         return true;
     }

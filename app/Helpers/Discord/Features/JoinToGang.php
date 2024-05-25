@@ -2,22 +2,19 @@
 
 namespace App\Helpers\Discord\Features;
 
+use App\Feature;
 use App\Helpers\API;
-use App\Helpers\Discord\Client;
-use App\Helpers\Discord\Discord;
-use App\Helpers\Discord\DiscordBot;
 use App\Helpers\Discord\DiscordMessage;
 use App\Models\Webhook;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord as DiscordPHP;
-use Discord\Interaction;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Guild\Guild;
 
 
-class JoinToGang
+class JoinToGang implements Feature
 {
 
     public API $api;
@@ -35,7 +32,7 @@ class JoinToGang
     }
 
 
-    public function createGangButtonChannel(Guild $guild): bool|string
+    public function createButtonChannel(Guild $guild): bool|string
     {
 
         try {
@@ -60,7 +57,7 @@ class JoinToGang
 
     }
 
-    private function createJoinToGang(Guild $guild): void
+    public function createMainChannel(Guild $guild): void
     {
 
         if ( !is_null($guild->channels->get('name', 'join-to-gang'))) {
@@ -93,15 +90,15 @@ class JoinToGang
     public function handle(): void
     {
 
-        $this->createGangCat();
+        $this->createCat();
         $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
-        $this->createJoinToGang($guild);
-        $this->createGangButtonChannel($guild);
-        $this->createRequestsPage($guild);
+        $this->createMainChannel($guild);
+        $this->createButtonChannel($guild);
+        $this->createLogPage($guild);
 
     }
 
-    private function createGangCat(): Guild|string
+    public function createCat(): Guild|string
     {
         try {
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
@@ -131,7 +128,7 @@ class JoinToGang
         }
     }
 
-    private function createRequestsPage(Guild $guild): void
+    public function createLogPage(Guild $guild): void
     {
         try {
             if ( !is_null($guild->channels->get('name', 'gang-requests'))) {

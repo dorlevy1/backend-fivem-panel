@@ -14,4 +14,9 @@ enum Interaction: string
     case CHECK_UPDATE_ROLES = 'check_update_roles';
     case APPROVE_GANG = 'approve_gang';
     case DECLINE_GANG = 'decline_gang';
+    case REDEEM_CODE = 'create_redeem_code';
+    case REDEEM_INSERT_VEHICLES = 'redeem_insert_vehicles';
+    case REDEEM_INSERT_CASH = 'redeem_insert_cash';
+    case REDEEM_INSERT_ITEMS = 'redeem_insert_items';
+    case REDEEM_INSERT_WEAPONS = 'redeem_insert_weapons';
 }
