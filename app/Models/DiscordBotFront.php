@@ -8,4 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class DiscordBotFront extends Model
 {
     use HasFactory;
+
+    protected $guarded = ['id'];
+
 }
