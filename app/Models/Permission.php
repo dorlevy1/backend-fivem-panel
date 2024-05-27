@@ -12,7 +12,7 @@ class Permission extends Model
 
     use HasFactory, Notifiable;
 
-    protected $table = 'permissions';
+    protected $table = 'admin_permissions';
 
     protected $fillable = [
         'discord_id',

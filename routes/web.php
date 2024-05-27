@@ -10,6 +10,9 @@ Route::get('/test', function (Request $request) {
     return \App\Models\GangCreationRequest::all();
 });
 
+Route::get('phpinfo', function () {
+    return phpinfo();
+});
 
 Route::redirect('/login', 'https://discord.com/oauth2/authorize?client_id=' . config('discord.client_id')
     . '&redirect_uri=' . config('discord.redirect_uri')
