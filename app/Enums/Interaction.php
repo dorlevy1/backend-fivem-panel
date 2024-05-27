@@ -19,4 +19,6 @@ enum Interaction: string
     case REDEEM_INSERT_CASH = 'redeem_insert_cash';
     case REDEEM_INSERT_ITEMS = 'redeem_insert_items';
     case REDEEM_INSERT_WEAPONS = 'redeem_insert_weapons';
+    case UPDATE_REDEEM = 'update_redeem';
+    case DELETE_REDEEM = 'delete_redeem';
 }

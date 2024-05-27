@@ -101,10 +101,15 @@ class Player extends Model
     //        return $query->whereHas('ban');
     //    }
 
+    public function scopeCid(Builder $query, $discord)
+    {
+        return $query->where('discord', '=', 'discord:' . $discord)->first()->citizenid;
+
+    }
+
     public function criminal()
     {
         return $this->belongsTo(Criminal::class, 'citizenid', 'citizenid');
-
     }
 
 }

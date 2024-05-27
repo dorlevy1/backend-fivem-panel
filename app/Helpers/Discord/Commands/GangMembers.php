@@ -34,6 +34,11 @@ class GangMembers extends DiscordCommand implements Command
         });
     }
 
+    public function interaction($name, $interaction)
+    {
+
+    }
+
     private function addGang(In $interaction): bool
     {
         $text = "";

@@ -3,6 +3,7 @@
 namespace App\Helpers\Discord\Commands;
 
 use App\Command;
+use App\Enums\Interaction as InteractionEnum;
 use App\Helpers\Discord\DiscordCommand;
 use App\Models\GangCreationRequest;
 use App\Models\Webhook;
@@ -26,6 +27,10 @@ class Update extends DiscordCommand implements Command
     {
     }
 
+    public function interaction($name, $interaction)
+    {
+
+    }
     public function update(In $interaction): void
     {
         $gangCreateArea = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;

@@ -20,6 +20,8 @@ use Discord\WebSockets\Event;
         parent::__construct();
         $this->entries = scandir($this->directoryCommands);
         $this->features = scandir($this->featureDirectory);
+        $this->featuresClasses = [];
+        $this->commandClasses = [];
 
         $this->client->on('init', function (DiscordPHP $d) {
             $this->generate_features($d);
@@ -31,10 +33,21 @@ use Discord\WebSockets\Event;
 
             $d->on(Event::INTERACTION_CREATE, function ($interaction, DiscordPHP $discordPHP) {
                 new Interaction($this->client, $discordPHP, $interaction);
+                $this->interactions($interaction);
+
             });
         });
 
         $this->client->run();
+    }
+
+    private function interactions($d)
+    {
+        $array = array_merge($this->featuresClasses, $this->commandClasses);
+
+        foreach ($array as $class) {
+            $class->interaction($d, $this->client);
+        }
     }
 
     private function generate_features($d): void
@@ -45,7 +58,7 @@ use Discord\WebSockets\Event;
                 $path = $this->featureDirectory . '/' . $feature;
                 if (is_file($path)) {
                     $class = $this->globalPathFeatures . str_replace('.php', '', $feature);
-                    new $class($d, $this->client);
+                    $this->featuresClasses[] = new $class($d, $this->client);
                 }
             }
         }
@@ -59,7 +72,7 @@ use Discord\WebSockets\Event;
                 $path = $this->directoryCommands . '/' . $entry;
                 if (is_file($path)) {
                     $class = $this->globalPathCommands . str_replace('.php', '', $entry);
-                    new $class($d, $this->client);
+                    $this->commandClasses[] = new $class($d, $this->client);
                 }
             }
         }

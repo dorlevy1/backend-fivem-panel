@@ -24,6 +24,23 @@ use Discord\Parts\Interactions\Interaction as In;
         $this->client = $client;
     }
 
+
+    public function createButtons($buttons, $cb = null)
+    {
+        $ar = ActionRow::new();
+
+        foreach ($buttons as $button) {
+            $button = (object)$button;
+            $btn = Button::new($button->style)->setCustomId($button->custom_id);
+            $btn->setLabel($button->label);
+            $ar->addComponent($btn);
+
+            !is_null($cb) && $cb($btn);
+        }
+
+        return $ar;
+    }
+
     public function createSummaryRequestEmbed(
         Discord $client,
         In $interaction,

@@ -23,6 +23,11 @@ class Permissions extends DiscordCommand implements Command
         });
     }
 
+    public function interaction($name, $interaction)
+    {
+
+    }
+
     private function permissions(In $interaction): void
     {
 
