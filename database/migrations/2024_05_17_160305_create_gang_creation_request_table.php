@@ -14,7 +14,7 @@ return new class extends Migration {
         Schema::connection('second_db')->create('gang_creation_request', function (Blueprint $table) {
             $table->id();
             $table->string('discord_id')->nullable()->unique();
-            $table->string('gang_name')->nullable()->unique();
+            $table->string('gang_name')->nullable();
             $table->string('boss')->nullable();
             $table->string('co_boss')->nullable();
             $table->string('members')->nullable();
