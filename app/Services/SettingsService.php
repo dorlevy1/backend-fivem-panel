@@ -17,9 +17,9 @@ class SettingsService
         $this->settingsRepository = $settingsRepository;
     }
 
-    public function getWarns()
+    public function all()
     {
-
+        return $this->settingsRepository->all();
     }
 
 
@@ -27,8 +27,9 @@ class SettingsService
     {
     }
 
-    public function update()
+    public function update($data)
     {
+        return $this->settingsRepository->update($data);
     }
 
     public function delete($id)

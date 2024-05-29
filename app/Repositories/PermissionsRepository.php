@@ -7,6 +7,7 @@ use App\Events\DatabaseChange;
 use App\Models\Admin;
 use App\Models\PendingPermission;
 use App\Models\Permission;
+use App\Models\PermissionType;
 use App\Notifications\FirstTimeNotification;
 use App\Notifications\WebhookNotification;
 use Illuminate\Support\Facades\DB;
@@ -35,14 +36,17 @@ class PermissionsRepository
         }
         $pending = DB::table('pending_permissions')->get();
 
-        return [$permissions, $pending];
+        $permissions_type = PermissionType::all();
+
+        return [$permissions, $pending, $permissions_type];
     }
 
     public function get(): object
     {
         return response()->json([
-            'permissions' => $this->all()[0],
-            'pending'     => $this->all()[1]
+            'permissions'      => $this->all()[0],
+            'pending'          => $this->all()[1],
+            'permissions_type' => $this->all()[2]
         ]);
     }
 
@@ -119,8 +123,8 @@ class PermissionsRepository
             'title'         => 'Invitation For DLPanel',
             'description'   => "<@{$discord}> got an invitation!",
             'webhook'       => "permissions",
-            'fields'     => [],
-            'components' => [],
+            'fields'        => [],
+            'components'    => [],
         ]));
 
         return response()->json([

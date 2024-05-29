@@ -21,15 +21,16 @@ class SettingsController extends Controller
 
     }
 
-    public function getOnlinePlayers()
+    public function all()
     {
+        return $this->settingsService->all();
     }
 
-    public function getPlayerData(Request $request)
+    public function update(Request $request)
     {
+
+        return $this->settingsService->update($request->data);
     }
 
-    public function checkForOnlinePlayer(Request $request)
-    {
-    }
+
 }

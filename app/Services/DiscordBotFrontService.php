@@ -17,9 +17,9 @@ class DiscordBotFrontService
         $this->botFrontRepository = $botFrontRepository;
     }
 
-    public function getWarns()
+    public function all()
     {
-
+        return $this->botFrontRepository->all();
     }
 
 
@@ -27,8 +27,9 @@ class DiscordBotFrontService
     {
     }
 
-    public function update()
+    public function update($data)
     {
+        return $this->botFrontRepository->update($data);
     }
 
     public function delete($id)

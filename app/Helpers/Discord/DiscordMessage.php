@@ -64,10 +64,10 @@ use Discord\Parts\Interactions\Interaction as In;
         return $this->embed($client, $fields, 'Gang Request');
     }
 
-    public function message($data): bool
+    public static function message($data): bool
     {
         $data = (object)$data;
-        $this->createMessage([
+        self::createMessage([
             'adminDiscordId' => $data->adminDiscordId,
             'title'          => "Removed Ban",
             'description'    => "<@{$data->adminDiscordId}> Removed Ban For <@{$data->playerDiscordId}>",

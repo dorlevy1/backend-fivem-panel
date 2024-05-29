@@ -27,8 +27,9 @@ use App\Models\Warn;
 
     }
 
-    public function getWarns()
+    public function all()
     {
+        return $this->redeem->all();
     }
 
     private function updateInGameNotify($name): void

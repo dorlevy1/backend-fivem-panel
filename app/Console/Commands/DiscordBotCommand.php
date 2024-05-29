@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers\API;
 use App\Helpers\Discord\Discord;
 use Illuminate\Console\Command;
 
@@ -27,6 +28,14 @@ class DiscordBotCommand extends Command
      */
     public function handle(): void
     {
-        new Discord();
+        $available = (new API())->apiRequest("https://discord.com/api/v8/guilds/".env('DISCORD_BOT_GUILD'),
+            null,
+            env('DISCORD_BOT_TOKEN'), 'Bot', true, 'GET');
+        if (isset($available->message)) {
+            var_dump('Not Good');
+        } else {
+            var_dump('Good');
+        }
+                new Discord();
     }
 }

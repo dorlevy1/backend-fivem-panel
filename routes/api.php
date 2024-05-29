@@ -8,7 +8,11 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\WarnsController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\DiscordBotFrontController;
 use App\Http\Controllers\DiscordController;
+use App\Http\Controllers\GangRequestsController;
+use App\Http\Controllers\RedeemCodeRequestController;
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -23,11 +27,6 @@ Route::post('/broadcasting/auth', function () {
 
 Route::middleware(['auth:api'])->group(function () {
     Route::post('/checkPermissions', [AdminController::class, 'checkForPermissions']);
-
-    Route::post('/discord/players', [DiscordController::class, 'getOnlinePlayers']);
-    Route::post('/discord/checkOnline', [DiscordController::class, 'checkForOnlinePlayer']);
-    Route::post('/discord/playerData', [DiscordController::class, 'getPlayerData']);
-
 
     Route::prefix('players')->middleware(['auth:api'])->group(function () {
         Route::post('/get', [PlayersController::class, 'view']);
@@ -74,5 +73,24 @@ Route::middleware(['auth:api'])->group(function () {
         Route::post('/update', [ReportController::class, 'update']);
         Route::post('/claim', [ReportController::class, 'claim']);
         Route::post('/remove', [ReportController::class, 'delete']);
+    });
+
+    Route::prefix('discord')->group(function () {
+        Route::post('/all', [DiscordBotFrontController::class, 'all']);
+        Route::post('/update', [DiscordBotFrontController::class, 'update']);
+        Route::post('/players', [DiscordController::class, 'getOnlinePlayers']);
+        Route::post('/checkOnline', [DiscordController::class, 'checkForOnlinePlayer']);
+        Route::post('/playerData', [DiscordController::class, 'getPlayerData']);
+
+    });
+    Route::prefix('settings')->group(function () {
+        Route::post('/all', [SettingsController::class, 'all']);
+        Route::post('/update', [SettingsController::class, 'update']);
+    });
+    Route::prefix('gang-requests')->group(function () {
+        Route::post('/all', [GangRequestsController::class, 'all']);
+    });
+    Route::prefix('redeem-requests')->group(function () {
+        Route::post('/all', [RedeemCodeRequestController::class, 'all']);
     });
 });

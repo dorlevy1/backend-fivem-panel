@@ -3,6 +3,8 @@
 use App\Events\DatabaseChange;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Middleware\SubdomainEnsure;
+use Discord\Discord;
+use Discord\WebSockets\Intents;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -10,8 +12,8 @@ Route::get('/test', function (Request $request) {
     return \App\Models\GangCreationRequest::all();
 });
 
-Route::get('phpinfo', function () {
-    return phpinfo();
+Route::get('dis', function () {
+
 });
 
 Route::redirect('/login', 'https://discord.com/oauth2/authorize?client_id=' . config('discord.client_id')

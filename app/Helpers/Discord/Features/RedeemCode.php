@@ -24,7 +24,6 @@ use Discord\Parts\Channel\Channel;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Interaction as In;
 use Discord\Parts\User\Member;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 
@@ -33,16 +32,15 @@ class RedeemCode extends DiscordMessage implements Feature
 
 
     public API $api;
-    public DiscordMessage $message;
     public DiscordPHP $discord;
     public DiscordPHP $client;
 
     public function __construct(DiscordPHP $discord, DiscordPHP $client)
     {
+        parent::__construct($discord);
         $this->api = new API();
         $this->discord = $discord;
         $this->client = $client;
-        $this->message = new DiscordMessage($client);
         $this->handle();
     }
 
@@ -52,7 +50,7 @@ class RedeemCode extends DiscordMessage implements Feature
 
         try {
 
-            $embed = $this->message->embed($this->client, [], '');
+            $embed = $this->embed($this->client, [], '');
             $builder = MessageBuilder::new();
             $ar = ActionRow::new();
             $submit = Button::new(Button::STYLE_PRIMARY,
@@ -73,6 +71,14 @@ class RedeemCode extends DiscordMessage implements Feature
     {
 
         if ( !is_null($guild->channels->get('name', 'create-redeem-code'))) {
+
+            Webhook::updateOrCreate([
+                'name' => 'create-redeem-code'
+            ], [
+                'name'       => $guild->channels->get('name', 'create-redeem-code')->name,
+                'channel_id' => $guild->channels->get('name', 'create-redeem-code')->id,
+                'parent'     => false
+            ]);
             return;
         }
 
@@ -112,6 +118,7 @@ class RedeemCode extends DiscordMessage implements Feature
         $this->createMainChannel($guild);
         $this->createLogPage($guild);
 
+
     }
 
     public function interaction(In $interaction)
@@ -136,6 +143,14 @@ class RedeemCode extends DiscordMessage implements Feature
         try {
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
             if ( !is_null($guild->channels->get('name', 'Redeem Code Area'))) {
+
+                Webhook::updateOrCreate([
+                    'name' => 'Redeem Code Area'
+                ], [
+                    'name'       => $guild->channels->get('name', 'Redeem Code Area')->name,
+                    'channel_id' => $guild->channels->get('name', 'Redeem Code Area')->id,
+                    'parent'     => true
+                ]);
                 return false;
             }
             $group = $guild->channels->create([
@@ -167,6 +182,14 @@ class RedeemCode extends DiscordMessage implements Feature
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
 
             if ( !is_null($guild->channels->get('name', 'redeem-codes'))) {
+
+                Webhook::updateOrCreate([
+                    'name' => 'redeem-codes'
+                ], [
+                    'name'       => $guild->channels->get('name', 'redeem-codes')->name,
+                    'channel_id' => $guild->channels->get('name', 'redeem-codes')->id,
+                    'parent'     => false
+                ]);
                 return;
             }
 

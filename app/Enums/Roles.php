@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum Roles: string
 {
+
     const DEV = 10;
     const GOD = 9;
     const MANAGEMENT = 8;

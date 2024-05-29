@@ -13,11 +13,10 @@ return new class extends Migration {
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('excerpt');
-            $table->text('translations');
-            $table->text('permissions');
-            $table->text('environments');
+            $table->string('category')->nullable();
+            $table->string('excerpt')->nullable();
+            $table->string('label')->nullable();
+            $table->text('value')->nullable();
             $table->timestamps();
         });
     }

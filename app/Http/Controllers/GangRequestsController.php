@@ -21,8 +21,9 @@ class GangRequestsController extends Controller
 
     }
 
-    public function getOnlinePlayers()
+    public function all()
     {
+        return $this->gangRequestService->all();
     }
 
     public function getPlayerData(Request $request)

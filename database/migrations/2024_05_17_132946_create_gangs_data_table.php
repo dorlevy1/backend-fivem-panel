@@ -13,7 +13,7 @@ return new class extends Migration {
     {
         Schema::connection('second_db')->create('gangs_data', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable()->unique();
+            $table->string('name')->nullable();
             $table->boolean('available')->nullable();
             $table->string('color_hex')->nullable();
             $table->string('color_name')->nullable();

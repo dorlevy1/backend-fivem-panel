@@ -20,15 +20,14 @@ class DiscordBotFrontController extends Controller
 
     }
 
-    public function getOnlinePlayers()
+    public function all()
     {
+        return $this->discordService->all();
     }
 
-    public function getPlayerData(Request $request)
+    public function update(Request $request)
     {
-    }
 
-    public function checkForOnlinePlayer(Request $request)
-    {
+        return $this->discordService->update($request->data);
     }
 }

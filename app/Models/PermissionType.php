@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class DiscordBotFront extends Model
+class PermissionType extends Model
 {
+
     use HasFactory;
 
-    protected $guarded = ['id'];
-
+    protected $table = 'permission_type';
+    protected $guarded = [];
 }

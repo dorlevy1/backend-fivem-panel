@@ -17,9 +17,9 @@ class RedeemCodeRequestService
         $this->redeemCodeRequestRepository = $redeemCodeRequestRepository;
     }
 
-    public function getWarns()
+    public function all()
     {
-
+        return $this->redeemCodeRequestRepository->all();
     }
 
 

@@ -4,6 +4,7 @@
 namespace App\Repositories;
 
 use AllowDynamicProperties;
+use App\Enums\Roles;
 use App\Events\DatabaseChange;
 use App\Helpers\Discord\DiscordMessage;
 use App\Message;
@@ -27,8 +28,10 @@ use App\Models\Warn;
 
     }
 
-    public function getWarns()
+    public function all()
     {
+
+        return $this->settings->all();
     }
 
     private function updateInGameNotify($name): void
@@ -43,6 +46,11 @@ use App\Models\Warn;
 
     public function update($data)
     {
+        $settings = Settings::category($data['category'])->where('label', '=', $data['label'])->first();
+        $settings->value = json_encode($data['value']);
+        $settings->save();
+
+        return $settings;
 
     }
 

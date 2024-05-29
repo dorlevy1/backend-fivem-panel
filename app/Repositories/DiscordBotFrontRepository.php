@@ -7,43 +7,44 @@ use AllowDynamicProperties;
 use App\Events\DatabaseChange;
 use App\Helpers\Discord\DiscordMessage;
 use App\Message;
-use App\Models\DiscordBotFront;
+use App\Models\DiscordBot;
 use App\Models\Player;
+use App\Models\Settings;
 use App\Models\Warn;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\Fluent\Concerns\Has;
 
-#[AllowDynamicProperties] class DiscordBotFrontRepository extends Message
+#[AllowDynamicProperties] class DiscordBotFrontRepository
 {
 
 
-    protected DiscordBotFront $discordBotFront;
-    protected DatabaseChange $notify;
-    protected DatabaseChange $inGameNotify;
+    protected DiscordBot $discordBotFront;
 
-
-    public function __construct(DiscordBotFront $discordBotFront)
+    public function __construct(DiscordBot $discordBotFront)
     {
         $this->discordBotFront = $discordBotFront;
-        $this->notify = new DatabaseChange('warnsUpdate', 'my-event');
-
     }
 
-    public function getWarns()
+    public function all()
     {
+
+        return $this->discordBotFront->all();
     }
 
     private function updateInGameNotify($name): void
     {
     }
 
-
-    public function add($data)
+    public function update($request)
     {
 
-    }
+        $data = DiscordBot::category($request['category'])->where('label', '=', $request['label'])->first();
 
-    public function update($data)
-    {
+        $data->value = $request['category'] === 'Auth' ? Crypt::encryptString(json_encode($request['value'])) : json_encode($request['value']);
+        $data->save();
 
+        return $data;
     }
 
     public function delete($id)
@@ -53,7 +54,7 @@ use App\Models\Warn;
 
     private function sendSocket($data): void
     {
-       
+
     }
 
 }

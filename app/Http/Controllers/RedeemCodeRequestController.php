@@ -20,8 +20,9 @@ class RedeemCodeRequestController extends Controller
 
     }
 
-    public function getOnlinePlayers()
+    public function all()
     {
+        return $this->redeemCodeRequestService->all();
     }
 
     public function getPlayerData(Request $request)

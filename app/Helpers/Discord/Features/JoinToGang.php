@@ -25,7 +25,7 @@ use Discord\Parts\Interactions\Interaction as In;
 use Illuminate\Support\Facades\DB;
 
 
-class JoinToGang implements Feature
+class JoinToGang extends DiscordMessage implements Feature
 {
 
     public API $api;
@@ -35,6 +35,7 @@ class JoinToGang implements Feature
 
     public function __construct(DiscordPHP $discord, DiscordPHP $client)
     {
+        parent::__construct($discord);
         $this->api = new API();
         $this->discord = $discord;
         $this->client = $client;
@@ -49,7 +50,6 @@ class JoinToGang implements Feature
     public function interaction($interaction)
     {
         $name = explode('+', $interaction->data->custom_id)[0];
-
 
         return match ($name) {
             InteractionEnum::GANG_REQUEST->value => $this->gang_request($interaction),
@@ -146,7 +146,7 @@ class JoinToGang implements Feature
                     ]
                 ];
                 $embed = $this->embed($this->client, $fields, 'Request Begin ');
-                $embed2 = $this->embed($this->client, $actionToTake, 'Add You Gang Members!');
+                $embed2 = $this->embed($this->client, $actionToTake, 'Add Your Gang Members!');
                 $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true);
                 $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed2), true);
                 $interaction->acknowledge();
@@ -372,13 +372,21 @@ class JoinToGang implements Feature
     {
 
         if ( !is_null($guild->channels->get('name', 'join-to-gang'))) {
+            Webhook::updateOrCreate([
+                'name' => 'join-to-gang'
+            ], [
+                'name'       => $guild->channels->get('name', 'join-to-gang')->name,
+                'channel_id' => $guild->channels->get('name', 'join-to-gang')->id,
+                'parent'     => false
+            ]);
+
             return;
         }
 
         $category = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
 
         $channel = $guild->channels->create([
-            'name'      => 'Join-To-Gang',
+            'name'      => 'join-to-gang',
             'type'      => Channel::TYPE_GUILD_TEXT,
             'parent_id' => $category,
             'nsfw'      => false
@@ -400,7 +408,6 @@ class JoinToGang implements Feature
 
     public function handle(): void
     {
-
         $this->createCat();
         $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
         $this->createMainChannel($guild);
@@ -414,6 +421,15 @@ class JoinToGang implements Feature
         try {
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
             if ( !is_null($guild->channels->get('name', 'Gang Create Area'))) {
+
+                Webhook::updateOrCreate([
+                    'name' => 'Gang Create Area'
+                ], [
+                    'name'       => $guild->channels->get('name', 'Gang Create Area')->name,
+                    'channel_id' => $guild->channels->get('name', 'Gang Create Area')->id,
+                    'parent'     => true
+                ]);
+
                 return false;
             }
             $group = $guild->channels->create([
@@ -443,12 +459,20 @@ class JoinToGang implements Feature
     {
         try {
             if ( !is_null($guild->channels->get('name', 'gang-requests'))) {
+                Webhook::updateOrCreate([
+                    'name' => 'gang-requests'
+                ], [
+                    'name'       => $guild->channels->get('name', 'gang-requests')->name,
+                    'channel_id' => $guild->channels->get('name', 'gang-requests')->id,
+                    'parent'     => false
+                ]);
+
                 return;
             }
 
             $category = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
             $channel = $guild->channels->create([
-                'name'      => 'Gang-Requests',
+                'name'      => 'gang-requests',
                 'type'      => Channel::TYPE_GUILD_TEXT,
                 'parent_id' => $category,
                 'nsfw'      => false

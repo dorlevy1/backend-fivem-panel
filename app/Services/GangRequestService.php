@@ -17,8 +17,9 @@ class GangRequestService
         $this->gangRequestRepository = $gangRequestRepository;
     }
 
-    public function getWarns()
+    public function all()
     {
+        return $this->gangRequestRepository->all();
 
     }
 

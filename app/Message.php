@@ -31,7 +31,7 @@ abstract class Message
 
 
 
-    public function createMessage($data)
+    public static function createMessage($data)
     {
         $data = (object)$data;
 
@@ -52,7 +52,7 @@ abstract class Message
             ];
         }
 
-        $message = $this->createDraft($details);
+        $message = self::createDraft($details);
 
         (new Webhook())->notify(new WebhookNotification([
             'admin_discord' => $data->adminDiscordId,
@@ -64,7 +64,7 @@ abstract class Message
         return true;
     }
 
-    public function createDraft($data): array
+    public static function createDraft($data): array
     {
 
         $data = (object)$data;

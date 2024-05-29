@@ -27,8 +27,9 @@ use App\Models\Warn;
 
     }
 
-    public function getWarns()
+    public function all()
     {
+        return $this->gangCreationRequest->all();
     }
 
     private function updateInGameNotify($name): void
@@ -53,7 +54,7 @@ use App\Models\Warn;
 
     private function sendSocket($data): void
     {
-       
+
     }
 
 }

@@ -6,6 +6,7 @@ use App\Enums\Discord;
 use App\Helpers\API;
 use App\Helpers\Discord\DiscordAPI;
 use App\Helpers\Discord\DiscordMessage;
+use App\Message;
 use App\Models\Webhook;
 use Illuminate\Console\Command;
 
@@ -17,7 +18,7 @@ class InitWebhookDiscordChannels extends Command
      *
      * @var string
      */
-    protected $signature = 'dlpanel:init-webhook-discord-channels';
+    protected $signature = 'init-webhook-discord-channels';
 
     /**
      * The console command description.
@@ -29,48 +30,24 @@ class InitWebhookDiscordChannels extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+
+    private function checkOrInsert($datas, $guild = 'logs')
     {
-
         $api = new API();
-        $message = new DiscordMessage();
+        $endpoint = Discord::GUILD_CHANNELS->endpoint(['guildId' => $guild === 'logs' ? env('DISCORD_BOT_GUILD_LOGS') : env('DISCORD_BOT_GUILD')]);
 
-        try {
-            $endpoint = Discord::GUILD_CHANNELS->endpoint(['guildId' => env('DISCORD_BOT_GUILD_LOGS')]);
-            $channels = $api->apiRequest("{$endpoint}", null,
-                env('DISCORD_BOT_TOKEN'), 'Bot', true, 'GET');
-            if (array_search('DLPanel', array_column($channels, 'name'))) {
-                $this->error('Channels Already Exists !');
+        $channels = $api->apiRequest("{$endpoint}", null,
+            env('DISCORD_BOT_TOKEN'), 'Bot', true, 'GET');
+        if (is_object($channels)) {
+            $channels = (array)$channels;
+        }
 
-                return false;
-            }
+        for ($i = 0 ; $i < count($datas) ; $i++) {
 
-            $channelsArray = [];
-
-            $channelsArray[] = $api->apiRequest("{$endpoint}",
-                json_encode(['name' => 'DLPanel', 'type' => 4]),
-                env('DISCORD_BOT_TOKEN'), 'Bot', true);
-
-            $channelsArray[] = $api->apiRequest("{$endpoint}",
-                json_encode(['name' => 'Bans', 'parent_id' => $channelsArray[0]->id]),
-                env('DISCORD_BOT_TOKEN'), 'Bot', true);
-            $channelsArray[] = $api->apiRequest("{$endpoint}",
-                json_encode(['name' => 'Kicks', 'parent_id' => $channelsArray[0]->id]),
-                env('DISCORD_BOT_TOKEN'), 'Bot', true);
-            $channelsArray[] = $api->apiRequest("{$endpoint}",
-                json_encode(['name' => 'Warns', 'parent_id' => $channelsArray[0]->id]),
-                env('DISCORD_BOT_TOKEN'), 'Bot', true);
-            $channelsArray[] = $api->apiRequest("{$endpoint}",
-                json_encode(['name' => 'Permissions', 'parent_id' => $channelsArray[0]->id]),
-                env('DISCORD_BOT_TOKEN'), 'Bot', true);
-            $channelsArray[] = $api->apiRequest("{$endpoint}",
-                json_encode(['name' => 'Announcements', 'parent_id' => $channelsArray[0]->id]),
-                env('DISCORD_BOT_TOKEN'), 'Bot', true);
-            $channelsArray[] = $api->apiRequest("{$endpoint}",
-                json_encode(['name' => 'redeem-codes', 'parent_id' => $channelsArray[0]->id]),
-                env('DISCORD_BOT_TOKEN'), 'Bot', true);
-
-            foreach ($channelsArray as $channel) {
+            $data = $datas[$i];
+            $indexExists = array_search($data['name'], array_column($channels, 'name'));
+            if ($indexExists) {
+                $channel = $channels[$indexExists];
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
@@ -78,8 +55,26 @@ class InitWebhookDiscordChannels extends Command
                     'channel_id' => $channel->id,
                     'parent'     => $channel->type === 4
                 ]);
+                $this->info($data['name'] . ' Updated!');
+                if ($channel->type === 4) {
+                    return $channel;
+                }
+            } else {
+
+                $channel = $api->apiRequest("{$endpoint}",
+                    json_encode($data),
+                    env('DISCORD_BOT_TOKEN'), 'Bot', true);
+
+                Webhook::updateOrCreate([
+                    'name' => $channel->name
+                ], [
+                    'name'       => $channel->name,
+                    'channel_id' => $channel->id,
+                    'parent'     => $channel->type === 4
+                ]);
+
                 if ($channel->type !== 4) {
-                    $message->createMessage([
+                    DiscordMessage::createMessage([
                         'adminDiscordId' => 1,
                         'title'          => "Initialization For " . ucfirst($channel->name),
                         'description'    => ucfirst($channel->name) . " Initialization Finished Successfully.",
@@ -93,6 +88,27 @@ class InitWebhookDiscordChannels extends Command
                 }
                 $this->newLine();
             }
+        }
+        return true;
+    }
+
+    public function handle()
+    {
+
+        $api = new API();
+
+        try {
+            $mainChannel = $this->checkOrInsert([['name' => 'DLPanel', 'type' => 4]]);
+            $this->checkOrInsert([
+                ['name' => 'bans', 'parent_id' => $mainChannel->id],
+                ['name' => 'kicks', 'parent_id' => $mainChannel->id],
+                ['name' => 'warns', 'parent_id' => $mainChannel->id],
+                ['name' => 'permissions', 'parent_id' => $mainChannel->id],
+                ['name' => 'announcements', 'parent_id' => $mainChannel->id],
+                ['name' => 'redeem-codes', 'parent_id' => $mainChannel->id],
+            ]);
+
+
             $this->info('Initialization for Channels finished successfully');
 
             $dataRole = [
@@ -100,10 +116,17 @@ class InitWebhookDiscordChannels extends Command
                 'color' => 255,
             ];
             $endpoint = Discord::CREATE_ROLE->endpoint(['guildId' => env('DISCORD_BOT_GUILD_LOGS')]);
-            $role = $api->apiRequest("{$endpoint}", json_encode($dataRole),
-                env('DISCORD_BOT_TOKEN'), 'Bot', true);
-            if ($role) {
-                $this->info('Bans Role Created Successfully');
+
+            $exists = $api->apiRequest("{$endpoint}", null,
+                env('DISCORD_BOT_TOKEN'), 'Bot', false, 'GET');
+            $indexExists = array_search($dataRole['name'], array_column($exists, 'name'));
+
+            if ( !$indexExists) {
+                $role = $api->apiRequest("{$endpoint}", json_encode($dataRole),
+                    env('DISCORD_BOT_TOKEN'), 'Bot', true);
+                if ($role) {
+                    $this->info('Bans Role Created Successfully');
+                }
             }
         } catch (\ErrorException $e) {
             return $e->getMessage();

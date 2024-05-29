@@ -4,8 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
+
     /**
      * Run the migrations.
      */
@@ -13,13 +13,10 @@ return new class extends Migration
     {
         Schema::create('discord_bot', function (Blueprint $table) {
             $table->id();
-            $table->string('client_id');
-            $table->string('client_secret');
-            $table->string('bot_token');
-            $table->text('scopes');
-            $table->string('main_guild');
-            $table->string('log_guild');
-            $table->string('redirect_uri');
+            $table->string('category')->nullable();
+            $table->string('excerpt')->nullable();
+            $table->string('label')->nullable();
+            $table->text('value')->nullable();
             $table->timestamps();
         });
     }
