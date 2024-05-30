@@ -19,4 +19,9 @@ class GangService
     {
         return $this->gangRepository->getGangs();
     }
+
+    public function requests()
+    {
+        return $this->gangRepository->requests();
+    }
 }

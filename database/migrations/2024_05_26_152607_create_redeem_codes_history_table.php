@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('redeem_codes_history', function (Blueprint $table) {
             $table->id();
             $table->string('request_by')->nullable();
-            $table->string('discord_id')->nullable()->unique();
-            $table->string('citizenid')->nullable()->unique();
+            $table->string('discord_id')->nullable();
+            $table->string('citizenid')->nullable();
             $table->text('vehicles')->nullable();
             $table->text('weapons')->nullable();
             $table->text('items')->nullable();

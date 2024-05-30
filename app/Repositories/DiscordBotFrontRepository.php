@@ -38,10 +38,11 @@ use Illuminate\Testing\Fluent\Concerns\Has;
 
     public function update($request)
     {
-
         $data = DiscordBot::category($request['category'])->where('label', '=', $request['label'])->first();
 
+
         $data->value = $request['category'] === 'Auth' ? Crypt::encryptString(json_encode($request['value'])) : json_encode($request['value']);
+
         $data->save();
 
         return $data;

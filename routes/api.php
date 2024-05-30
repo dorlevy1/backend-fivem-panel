@@ -46,6 +46,7 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::prefix('gangs')->group(function () {
         Route::post('/', [GangsController::class, 'view']);
+        Route::post('/requests', [GangsController::class, 'requests']);
     });
 
 

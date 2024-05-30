@@ -79,6 +79,7 @@ class RedeemCode extends DiscordMessage implements Feature
                 'channel_id' => $guild->channels->get('name', 'create-redeem-code')->id,
                 'parent'     => false
             ]);
+
             return;
         }
 
@@ -151,6 +152,7 @@ class RedeemCode extends DiscordMessage implements Feature
                     'channel_id' => $guild->channels->get('name', 'Redeem Code Area')->id,
                     'parent'     => true
                 ]);
+
                 return false;
             }
             $group = $guild->channels->create([
@@ -190,6 +192,7 @@ class RedeemCode extends DiscordMessage implements Feature
                     'channel_id' => $guild->channels->get('name', 'redeem-codes')->id,
                     'parent'     => false
                 ]);
+
                 return;
             }
 
@@ -221,9 +224,11 @@ class RedeemCode extends DiscordMessage implements Feature
     }
 
 
-    private function getRequest($cid, $discord)
+    private function getRequest($player, $discord)
     {
-        return RedeemCodeRequest::where('discord_id', '=', $discord)->where("citizenid", '=', $cid)->first();
+
+        return isset($player->citizenid) ? RedeemCodeRequest::where('discord_id', '=',
+            $discord)->where("citizenid", '=', $player->citizenid)->first() : false;
     }
 
     private function createSummaryRequest(RedeemCodeRequest $request)
@@ -269,11 +274,19 @@ class RedeemCode extends DiscordMessage implements Feature
 
         $select->setListener(function (In $in) {
             $member = $in->guild->members->get('id', $in->data->values[0]);
-            $request = $this->getRequest(Player::cid($in->data->values[0]), $in->data->values[0]);
+            $request = $this->getRequest(Player::getData($in->data->values[0]), $in->data->values[0]);
+
+            if ( !$request && !is_null($request)) {
+                $in->respondWithMessage(MessageBuilder::new()->setContent("<@{$member->user->id}> Doesn't have player in game."),
+                    true);
+                $in->acknowledge();
+
+                return false;
+            }
             if (is_null($request)) {
-                RedeemCodeRequest::create([
+                $request = RedeemCodeRequest::create([
                     'discord_id' => $in->data->values[0],
-                    'citizenid'  => Player::cid($in->data->values[0]),
+                    'citizenid'  => Player::getData($in->data->values[0])->citizenid,
                     'request_by' => $in->user->id,
                     'created_at' => Carbon::now()
                 ]);
@@ -283,6 +296,7 @@ class RedeemCode extends DiscordMessage implements Feature
 
                 return true;
             }
+
             $embed = $this->createSummaryRequest($request);
             $ar = $this->createButtons([
                 [
@@ -298,6 +312,7 @@ class RedeemCode extends DiscordMessage implements Feature
             ]);
 
             $in->respondWithMessage(MessageBuilder::new()->addEmbed($embed)->addComponent($ar), true);
+
             $in->acknowledge();
 
             return false;
@@ -455,7 +470,7 @@ class RedeemCode extends DiscordMessage implements Feature
     private function finishRedeem(In $in, Member $member)
     {
 
-        $cid = Player::cid($member->user->id);
+        $cid = Player::getData($member->user->id)->citizenid;
 
         $request = RedeemCodeRequest::where(['discord_id' => $member->user->id, 'citizenid' => $cid])->first();
 

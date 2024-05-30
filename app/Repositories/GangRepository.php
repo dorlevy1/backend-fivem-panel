@@ -5,6 +5,8 @@ namespace App\Repositories;
 
 use App\Models\Gang;
 use App\Models\Player;
+use App\Models\RedeemCode;
+use App\Models\RedeemCodeRequestHistory;
 use App\Services\PlayerService;
 use Illuminate\Support\Facades\DB;
 
@@ -48,6 +50,12 @@ class GangRepository
 
 
         return $gangs;
+    }
+
+
+    public function requests()
+    {
+        return ['active' => RedeemCode::with('request')->get(), 'history' => RedeemCodeRequestHistory::all()];
     }
 
 

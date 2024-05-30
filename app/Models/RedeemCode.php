@@ -12,5 +12,11 @@ class RedeemCode extends Model
 
     protected $fillable = ['code', 'redeem_request'];
 
+    protected $primaryKey = 'redeem_request';
 
+
+    public function request()
+    {
+        return $this->hasOne(RedeemCodeRequest::class, 'id');
+    }
 }

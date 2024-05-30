@@ -22,4 +22,9 @@ class GangsController extends Controller
         return $this->gangService->getGangs();
     }
 
+    public function requests()
+    {
+        return $this->gangService->requests();
+    }
+
 }

@@ -101,9 +101,9 @@ class Player extends Model
     //        return $query->whereHas('ban');
     //    }
 
-    public function scopeCid(Builder $query, $discord)
+    public function scopeGetData(Builder $query, $discord)
     {
-        return $query->where('discord', '=', 'discord:' . $discord)->first()->citizenid;
+        return $query->where('discord', '=', 'discord:' . $discord)->get()->first();
 
     }
 

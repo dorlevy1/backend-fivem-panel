@@ -21,7 +21,6 @@ class RedeemCodeRequest extends Model
         'channel_id'
     ];
 
-
     public function redeem_code()
     {
         return $this->belongsTo(RedeemCode::class, 'id', 'redeem_request');

@@ -197,9 +197,9 @@ class JoinToGang extends DiscordMessage implements Feature
         $interaction->channel->sendMessage($builder)->done();
 
         if ( !$talkTo) {
-            $button1 = Button::new(Button::STYLE_SUCCESS)->setCustomId('decline_gang+' . $interaction->user->id);
+            $button1 = Button::new(Button::STYLE_DANGER)->setCustomId('decline_gang+' . $interaction->user->id);
             $button1->setLabel('Decline');
-            $button2 = Button::new(Button::STYLE_DANGER)->setCustomId('approve_gang+' . $interaction->user->id);
+            $button2 = Button::new(Button::STYLE_SUCCESS)->setCustomId('approve_gang+' . $interaction->user->id);
             $button2->setLabel('Approve');
             $action->addComponent($button1);
             $action->addComponent($button2);
@@ -273,11 +273,11 @@ class JoinToGang extends DiscordMessage implements Feature
             ['name' => 'Approved By', 'value' => "<@{$interaction->user->id}>"]
         ];
 
-        $embed = $this->embed($this->client, $fields, 'Action Decline');
+        $embed = $this->embed($this->client, $fields, 'Action Approved');
         $member = $guild->members->get('id', $gangRequest->discord_id);
         $ch->name = $member->user->displayname . '-!Approved!🟢';
         $ch->setPermissions($guild->members->get('id', $interaction->user->id),
-            ['view_channel'], ['send_messages'])->done();
+            ['view_channel', 'send_messages'])->done();
         $guild->channels->save($ch);
 
 
