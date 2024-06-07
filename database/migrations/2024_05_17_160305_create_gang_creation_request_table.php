@@ -11,18 +11,21 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::connection('second_db')->create('gang_creation_request', function (Blueprint $table) {
-            $table->id();
-            $table->string('discord_id')->nullable()->unique();
-            $table->string('gang_name')->nullable();
-            $table->string('boss')->nullable();
-            $table->string('co_boss')->nullable();
-            $table->string('members')->nullable();
-            $table->boolean('ready_for_approve')->default(0);
-            $table->string('channel_id')->nullable();
-            $table->timestamps();
+        if (!Schema::connection('second_db')->hasTable('gang_creation_request')) {
 
-        });
+            Schema::connection('second_db')->create('gang_creation_request', function (Blueprint $table) {
+                $table->id();
+                $table->string('discord_id')->nullable()->unique();
+                $table->string('gang_name')->nullable();
+                $table->string('boss')->nullable();
+                $table->string('co_boss')->nullable();
+                $table->string('members')->nullable();
+                $table->boolean('ready_for_approve')->default(0);
+                $table->string('channel_id')->nullable();
+                $table->timestamps();
+
+            });
+        }
     }
 
     /**

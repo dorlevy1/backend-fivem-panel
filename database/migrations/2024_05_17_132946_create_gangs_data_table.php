@@ -11,14 +11,16 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::connection('second_db')->create('gangs_data', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->nullable();
-            $table->boolean('available')->nullable();
-            $table->string('color_hex')->nullable();
-            $table->string('color_name')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::connection('second_db')->hasTable('gangs_data')) {
+            Schema::connection('second_db')->create('gangs_data', function (Blueprint $table) {
+                $table->id();
+                $table->string('name')->nullable();
+                $table->boolean('available')->nullable();
+                $table->string('color_hex')->nullable();
+                $table->string('color_name')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

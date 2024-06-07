@@ -11,18 +11,21 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('reports', function (Blueprint $table) {
-            $table->id();
-            $table->string('discord_id');
-            $table->string('citizen_id');
-            $table->string('title');
-            $table->text('description');
-            $table->string('claim_by')->nullable();
-            $table->integer('status')->default(1);
-            $table->timestamps();
-            $table->foreign('claim_by')->references('discord_id')->on('admins');
+        if (!Schema::hasTable('reports')) {
 
-        });
+            Schema::create('reports', function (Blueprint $table) {
+                $table->id();
+                $table->string('discord_id');
+                $table->string('citizen_id');
+                $table->string('title');
+                $table->text('description');
+                $table->string('claim_by')->nullable();
+                $table->integer('status')->default(1);
+                $table->timestamps();
+                $table->foreign('claim_by')->references('discord_id')->on('admins');
+
+            });
+        }
     }
 
     /**

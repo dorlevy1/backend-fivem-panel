@@ -70,14 +70,14 @@ class RedeemCode extends DiscordMessage implements Feature
     public function createMainChannel(Guild $guild): void
     {
 
-        if ( !is_null($guild->channels->get('name', 'create-redeem-code'))) {
+        if (!is_null($guild->channels->get('name', 'create-redeem-code'))) {
 
             Webhook::updateOrCreate([
                 'name' => 'create-redeem-code'
             ], [
-                'name'       => $guild->channels->get('name', 'create-redeem-code')->name,
+                'name' => $guild->channels->get('name', 'create-redeem-code')->name,
                 'channel_id' => $guild->channels->get('name', 'create-redeem-code')->id,
-                'parent'     => false
+                'parent' => false
             ]);
 
             return;
@@ -87,10 +87,10 @@ class RedeemCode extends DiscordMessage implements Feature
 
 
         $channel = $guild->channels->create([
-            'name'      => 'create-redeem-code',
-            'type'      => Channel::TYPE_GUILD_TEXT,
+            'name' => 'create-redeem-code',
+            'type' => Channel::TYPE_GUILD_TEXT,
             'parent_id' => $category,
-            'nsfw'      => false
+            'nsfw' => false
         ]);
 
 
@@ -99,9 +99,9 @@ class RedeemCode extends DiscordMessage implements Feature
             Webhook::updateOrCreate([
                 'name' => $channel->name
             ], [
-                'name'       => $channel->name,
+                'name' => $channel->name,
                 'channel_id' => $channel->id,
-                'parent'     => false
+                'parent' => false
             ]);
 
             $this->createButtonChannel($guild);
@@ -143,14 +143,14 @@ class RedeemCode extends DiscordMessage implements Feature
     {
         try {
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
-            if ( !is_null($guild->channels->get('name', 'Redeem Code Area'))) {
+            if (!is_null($guild->channels->get('name', 'Redeem Code Area'))) {
 
                 Webhook::updateOrCreate([
                     'name' => 'Redeem Code Area'
                 ], [
-                    'name'       => $guild->channels->get('name', 'Redeem Code Area')->name,
+                    'name' => $guild->channels->get('name', 'Redeem Code Area')->name,
                     'channel_id' => $guild->channels->get('name', 'Redeem Code Area')->id,
-                    'parent'     => true
+                    'parent' => true
                 ]);
 
                 return false;
@@ -164,9 +164,9 @@ class RedeemCode extends DiscordMessage implements Feature
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
-                    'name'       => $channel->name,
+                    'name' => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => true
+                    'parent' => true
                 ]);
 
                 return $guild;
@@ -183,14 +183,14 @@ class RedeemCode extends DiscordMessage implements Feature
         try {
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
 
-            if ( !is_null($guild->channels->get('name', 'redeem-codes'))) {
+            if (!is_null($guild->channels->get('name', 'redeem-codes'))) {
 
                 Webhook::updateOrCreate([
                     'name' => 'redeem-codes'
                 ], [
-                    'name'       => $guild->channels->get('name', 'redeem-codes')->name,
+                    'name' => $guild->channels->get('name', 'redeem-codes')->name,
                     'channel_id' => $guild->channels->get('name', 'redeem-codes')->id,
-                    'parent'     => false
+                    'parent' => false
                 ]);
 
                 return;
@@ -200,10 +200,10 @@ class RedeemCode extends DiscordMessage implements Feature
 
 
             $channel = $guild->channels->create([
-                'name'      => 'redeem-codes',
-                'type'      => Channel::TYPE_GUILD_TEXT,
+                'name' => 'redeem-codes',
+                'type' => Channel::TYPE_GUILD_TEXT,
                 'parent_id' => $category,
-                'nsfw'      => false
+                'nsfw' => false
             ]);
 
 
@@ -211,9 +211,9 @@ class RedeemCode extends DiscordMessage implements Feature
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
-                    'name'       => $channel->name,
+                    'name' => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => false
+                    'parent' => false
                 ]);
             })->done();
 
@@ -235,29 +235,29 @@ class RedeemCode extends DiscordMessage implements Feature
     {
         $redeem_code = $request->redeem_code()->first();
         $fields = [];
-        if ( !is_null($redeem_code)) {
+        if (!is_null($redeem_code)) {
             $fields[] = ['name' => 'Redeem Code:', 'value' => $redeem_code->code];
             $fields[] = ['name' => 'Created By:', 'value' => "<@{$request->request_by}>"];
             $fields[] = ['name' => 'Created Date:', 'value' => $redeem_code->created_at];
         }
         $fields[] = [
-            'name'  => 'Player Data:',
+            'name' => 'Player Data:',
             'value' => "**Discord** : <@{$request->discord_id}>\n**CitizenID** : {$request->citizenid}"
         ];
 
-        if ( !empty($request->vehicles)) {
+        if (!empty($request->vehicles)) {
             $fields[] = ['name' => 'Vehicles', 'value' => str_replace(',', "\n", $request->vehicles)];
         }
 
-        if ( !empty($request->weapons)) {
+        if (!empty($request->weapons)) {
             $fields[] = ['name' => 'Weapons', 'value' => str_replace(',', "\n", $request->weapons)];
         }
 
-        if ( !empty($request->items)) {
+        if (!empty($request->items)) {
             $fields[] = ['name' => 'Items', 'value' => str_replace(',', "\n", $request->items)];
         }
 
-        if ( !empty($request->cash)) {
+        if (!empty($request->cash)) {
             $fields[] = ['name' => 'Cash', 'value' => $request->cash];
         }
 
@@ -276,7 +276,7 @@ class RedeemCode extends DiscordMessage implements Feature
             $member = $in->guild->members->get('id', $in->data->values[0]);
             $request = $this->getRequest(Player::getData($in->data->values[0]), $in->data->values[0]);
 
-            if ( !$request && !is_null($request)) {
+            if (!$request && !is_null($request)) {
                 $in->respondWithMessage(MessageBuilder::new()->setContent("<@{$member->user->id}> Doesn't have player in game."),
                     true);
                 $in->acknowledge();
@@ -286,7 +286,7 @@ class RedeemCode extends DiscordMessage implements Feature
             if (is_null($request)) {
                 $request = RedeemCodeRequest::create([
                     'discord_id' => $in->data->values[0],
-                    'citizenid'  => Player::getData($in->data->values[0])->citizenid,
+                    'citizenid' => Player::getData($in->data->values[0])->citizenid,
                     'request_by' => $in->user->id,
                     'created_at' => Carbon::now()
                 ]);
@@ -300,14 +300,14 @@ class RedeemCode extends DiscordMessage implements Feature
             $embed = $this->createSummaryRequest($request);
             $ar = $this->createButtons([
                 [
-                    'style'     => Button::STYLE_PRIMARY,
+                    'style' => Button::STYLE_PRIMARY,
                     'custom_id' => 'update_redeem+' . $member->user->id,
-                    'label'     => 'Update Redeem'
+                    'label' => 'Update Redeem'
                 ],
                 [
-                    'style'     => Button::STYLE_DANGER,
+                    'style' => Button::STYLE_DANGER,
                     'custom_id' => 'delete_redeem+' . $member->user->id,
-                    'label'     => 'Delete Redeem'
+                    'label' => 'Delete Redeem'
                 ]
             ]);
 
@@ -443,26 +443,20 @@ class RedeemCode extends DiscordMessage implements Feature
         return true;
     }
 
-    private function generateCode($length = 35)
+    private function generateCode($length = 11)
     {
-        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-/\+';
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);
         $randomString = '';
-        for ($i = 0 ; $i < $length ; $i++) {
+        for ($i = 0; $i < $length; $i++) {
 
-            if (strlen($randomString) % 6 == 0) {
-                $randomString .= '.';
-            }
-            if (strlen($randomString) % 10 == 0) {
-                $randomString .= '-/';
-            }
             $randomString .= $characters[random_int(0, $charactersLength - 1)];
         }
 
-        $code = \App\Models\RedeemCode::where('code', '=', $randomString)->first();
-        if ( !is_null($code)) {
-            $this->generateCode();
-        }
+//        $code = \App\Models\RedeemCode::where('code', '=', $randomString)->first();
+//        if (!is_null($code)) {
+//            $this->generateCode();
+//        }
 
         return $randomString;
     }
@@ -476,11 +470,11 @@ class RedeemCode extends DiscordMessage implements Feature
 
         $redeem = \App\Models\RedeemCode::where('redeem_request', '=', $request->id)->first();
         if (is_null($redeem)) {
-            $code = $this->generateCode();
+            $code = $this->generateCode(3) . '-' . $this->generateCode(6) . '-' . $this->generateCode(3);
             \App\Models\RedeemCode::create([
                 'redeem_request' => $request->id,
-                'code'           => $code,
-                'created_at'     => Carbon::now()
+                'code' => $code,
+                'created_at' => Carbon::now()
             ]);
         }
 
@@ -514,11 +508,11 @@ class RedeemCode extends DiscordMessage implements Feature
         RedeemCodeRequestHistory::create([
             'request_by' => $request->request_by,
             'discord_id' => $request->discord_id,
-            'citizenid'  => $request->citizenid,
-            'weapons'    => $request->weapons,
-            'vehicles'   => $request->vehicles,
-            'items'      => $request->items,
-            'cash'       => $request->cash,
+            'citizenid' => $request->citizenid,
+            'weapons' => $request->weapons,
+            'vehicles' => $request->vehicles,
+            'items' => $request->items,
+            'cash' => $request->cash,
 
         ]);
         $request->delete();

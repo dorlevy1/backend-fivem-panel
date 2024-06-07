@@ -11,15 +11,17 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('warns', function (Blueprint $table) {
-            $table->id();
-            $table->string('discord')->unique();
-            $table->string('license');
-            $table->string('name');
-            $table->string('reason');
-            $table->string('warned_by');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('warns')) {
+            Schema::create('warns', function (Blueprint $table) {
+                $table->id();
+                $table->string('discord')->unique();
+                $table->string('license');
+                $table->string('name');
+                $table->string('reason');
+                $table->string('warned_by');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

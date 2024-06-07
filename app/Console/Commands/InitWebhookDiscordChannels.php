@@ -42,7 +42,7 @@ class InitWebhookDiscordChannels extends Command
             $channels = (array)$channels;
         }
 
-        for ($i = 0 ; $i < count($datas) ; $i++) {
+        for ($i = 0; $i < count($datas); $i++) {
 
             $data = $datas[$i];
             $indexExists = array_search($data['name'], array_column($channels, 'name'));
@@ -51,9 +51,9 @@ class InitWebhookDiscordChannels extends Command
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
-                    'name'       => $channel->name,
+                    'name' => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => $channel->type === 4
+                    'parent' => $channel->type === 4
                 ]);
                 $this->info($data['name'] . ' Updated!');
                 if ($channel->type === 4) {
@@ -68,17 +68,17 @@ class InitWebhookDiscordChannels extends Command
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
-                    'name'       => $channel->name,
+                    'name' => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => $channel->type === 4
+                    'parent' => $channel->type === 4
                 ]);
 
                 if ($channel->type !== 4) {
                     DiscordMessage::createMessage([
                         'adminDiscordId' => 1,
-                        'title'          => "Initialization For " . ucfirst($channel->name),
-                        'description'    => ucfirst($channel->name) . " Initialization Finished Successfully.",
-                        'webhook'        => $channel->name,
+                        'title' => "Initialization For " . ucfirst($channel->name),
+                        'description' => ucfirst($channel->name) . " Initialization Finished Successfully.",
+                        'webhook' => $channel->name,
                     ]);
 
                     $this->info(ucfirst($channel->name) . ' Initialization finished successfully');
@@ -100,19 +100,19 @@ class InitWebhookDiscordChannels extends Command
         try {
             $mainChannel = $this->checkOrInsert([['name' => 'DLPanel', 'type' => 4]]);
             $this->checkOrInsert([
-                ['name' => 'bans', 'parent_id' => $mainChannel->id],
-                ['name' => 'kicks', 'parent_id' => $mainChannel->id],
-                ['name' => 'warns', 'parent_id' => $mainChannel->id],
-                ['name' => 'permissions', 'parent_id' => $mainChannel->id],
-                ['name' => 'announcements', 'parent_id' => $mainChannel->id],
-                ['name' => 'redeem-codes', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-bans', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-kicks', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-warns', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-permissions', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-announcements', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-redeem-codes', 'parent_id' => $mainChannel->id],
             ]);
 
 
             $this->info('Initialization for Channels finished successfully');
 
             $dataRole = [
-                'name'  => 'Bans',
+                'name' => 'Bans',
                 'color' => 255,
             ];
             $endpoint = Discord::CREATE_ROLE->endpoint(['guildId' => env('DISCORD_BOT_GUILD_LOGS')]);
@@ -121,7 +121,7 @@ class InitWebhookDiscordChannels extends Command
                 env('DISCORD_BOT_TOKEN'), 'Bot', false, 'GET');
             $indexExists = array_search($dataRole['name'], array_column($exists, 'name'));
 
-            if ( !$indexExists) {
+            if (!$indexExists) {
                 $role = $api->apiRequest("{$endpoint}", json_encode($dataRole),
                     env('DISCORD_BOT_TOKEN'), 'Bot', true);
                 if ($role) {
