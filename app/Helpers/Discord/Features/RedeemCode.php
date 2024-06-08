@@ -363,7 +363,7 @@ class RedeemCode extends DiscordMessage implements Feature
                             $count = 0;
                         }
                     }
-                    $items .= "**" . $item->label . "**  - " . $key . "\n";
+                    $items .= "**" . $item->label . "** , ";
                 }
             }
             $this->sendInsertRedeemType($i, $member);
@@ -470,7 +470,7 @@ class RedeemCode extends DiscordMessage implements Feature
 
         $redeem = \App\Models\RedeemCode::where('redeem_request', '=', $request->id)->first();
         if (is_null($redeem)) {
-            $code = $this->generateCode(3) . '-' . $this->generateCode(6) . '-' . $this->generateCode(3);
+            $code = $this->generateCode(3) . '-' . $this->generateCode(5) . '-' . $this->generateCode(3);
             \App\Models\RedeemCode::create([
                 'redeem_request' => $request->id,
                 'code' => $code,

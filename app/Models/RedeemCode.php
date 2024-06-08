@@ -12,6 +12,7 @@ class RedeemCode extends Model
 
     protected $fillable = ['code', 'redeem_request'];
 
+    protected $connection='second_db';
     protected $primaryKey = 'redeem_request';
 
 

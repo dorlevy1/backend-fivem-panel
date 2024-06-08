@@ -11,7 +11,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('redeem_code_requests', function (Blueprint $table) {
+        Schema::connection('second_db')->table('redeem_code_requests', function (Blueprint $table) {
             $table->string('channel_id')->nullable();
         });
     }
@@ -21,7 +21,7 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('redeem_code_requests', function (Blueprint $table) {
+        Schema::connection('second_db')->table('redeem_code_requests', function (Blueprint $table) {
             $table->dropColumn('channel_id');
         });
     }
