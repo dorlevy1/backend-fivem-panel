@@ -249,12 +249,12 @@ class RedeemCode extends DiscordMessage implements Feature
             $fields[] = ['name' => 'Vehicles', 'value' => str_replace(',', "\n", $request->vehicles)];
         }
 
-        if (!empty($request->weapons)) {
-            $fields[] = ['name' => 'Weapons', 'value' => str_replace(',', "\n", $request->weapons)];
-        }
+//        if (!empty($request->weapons)) {
+//            $fields[] = ['name' => 'Weapons', 'value' => str_replace(',', "\n", $request->weapons)];
+//        }
 
         if (!empty($request->items)) {
-            $fields[] = ['name' => 'Items', 'value' => str_replace(',', "\n", $request->items)];
+            $fields[] = ['name' => 'Items / Weapons', 'value' => str_replace(',', "\n", $request->items)];
         }
 
         if (!empty($request->cash)) {
@@ -328,7 +328,7 @@ class RedeemCode extends DiscordMessage implements Feature
     {
         $builder = MessageBuilder::new();
         $select = StringSelect::new()->setPlaceholder('Select One Of The Choices');
-        $select->addOption(Option::new('Items', 'items'));
+        $select->addOption(Option::new('Items / Weapons', 'items'));
         $select->addOption(Option::new('Weapons', 'weapons'));
         $select->addOption(Option::new('Vehicles', 'vehicles'));
         $select->addOption(Option::new('Cash', 'cash'));
@@ -469,14 +469,27 @@ class RedeemCode extends DiscordMessage implements Feature
         $request = RedeemCodeRequest::where(['discord_id' => $member->user->id, 'citizenid' => $cid])->first();
 
         $redeem = \App\Models\RedeemCode::where('redeem_request', '=', $request->id)->first();
+        $code = $this->generateCode(3) . '-' . $this->generateCode(5) . '-' . $this->generateCode(3);
         if (is_null($redeem)) {
-            $code = $this->generateCode(3) . '-' . $this->generateCode(5) . '-' . $this->generateCode(3);
-            \App\Models\RedeemCode::create([
+            $redeem = \App\Models\RedeemCode::create([
                 'redeem_request' => $request->id,
                 'code' => $code,
                 'created_at' => Carbon::now()
             ]);
         }
+
+        RedeemCodeRequestHistory::updateOrCreate(
+            [
+                'code' => $redeem->code,
+                'discord_id' => $request->discord_id,
+                'citizenid' => $request->citizenid
+            ], [
+            'request_by' => $request->request_by,
+            'weapons' => $request->weapons,
+            'vehicles' => $request->vehicles,
+            'items' => $request->items,
+            'cash' => $request->cash,
+        ]);
 
         $embed = $this->createSummaryRequest($request);
         $in->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true)->done();
@@ -505,17 +518,7 @@ class RedeemCode extends DiscordMessage implements Feature
         $redeem = \App\Models\RedeemCode::where('redeem_request', '=', $request->id)->first();
 
         !is_null($redeem) && $redeem->delete();
-        RedeemCodeRequestHistory::create([
-            'request_by' => $request->request_by,
-            'discord_id' => $request->discord_id,
-            'citizenid' => $request->citizenid,
-            'weapons' => $request->weapons,
-            'vehicles' => $request->vehicles,
-            'items' => $request->items,
-            'cash' => $request->cash,
-
-        ]);
-        $request->delete();
+        !is_null($request) && $request->delete();
 
         $embed = $this->embed($this->discord, [], 'Redeem Deleted');
         $interaction->message->delete();
