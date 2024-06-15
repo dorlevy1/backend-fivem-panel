@@ -11,7 +11,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('redeem_codes', function (Blueprint $table) {
+        Schema::connection('second_db')->create('redeem_codes', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('redeem_request')->unique();
             $table->string('code');

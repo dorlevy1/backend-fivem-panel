@@ -11,7 +11,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('redeem_code_requests', function (Blueprint $table) {
+        Schema::connection('second_db')->create('redeem_code_requests', function (Blueprint $table) {
             $table->id();
             $table->string('request_by')->nullable();
             $table->string('discord_id')->nullable()->unique();
@@ -31,6 +31,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('redeem_code_requests');
+        Schema::connection('second_db')->dropIfExists('redeem_code_requests');
     }
 };

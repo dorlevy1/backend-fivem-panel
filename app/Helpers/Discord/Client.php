@@ -24,7 +24,7 @@ class Client
     public function __construct()
     {
         $this->client = new Discord([
-            'token'          => $_ENV['DISCORD_BOT_TOKEN'],
+            'token'          => env('DISCORD_BOT_TOKEN'),
             'loadAllMembers' => true,
             'storeMessages'  => true,
             'retrieveBans'   => true,

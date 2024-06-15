@@ -11,6 +11,8 @@ class RedeemCodeRequestHistory extends Model
     use HasFactory;
 
     protected $table = 'redeem_codes_history';
+    protected $connection = 'second_db';
+
     protected $fillable = [
         'citizenid',
         'request_by',

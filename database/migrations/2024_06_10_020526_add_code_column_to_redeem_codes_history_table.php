@@ -5,14 +5,13 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::connection('second_db')->table('redeem_code_requests', function (Blueprint $table) {
-            $table->string('channel_id')->nullable();
+        Schema::connection('second_db')->table('redeem_codes_history', function (Blueprint $table) {
+            $table->string('code')->nullable();
         });
     }
 
@@ -21,8 +20,8 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::connection('second_db')->table('redeem_code_requests', function (Blueprint $table) {
-            $table->dropColumn('channel_id');
+        Schema::connection('second_db')->table('redeem_codes_history', function (Blueprint $table) {
+            $table->dropColumn('code');
         });
     }
 };

@@ -18,7 +18,7 @@ class InitWebhookDiscordChannels extends Command
      *
      * @var string
      */
-    protected $signature = 'init-channels';
+    protected $signature = 'init-webhook-discord-channels';
 
     /**
      * The console command description.
@@ -42,36 +42,20 @@ class InitWebhookDiscordChannels extends Command
             $channels = (array)$channels;
         }
 
-        for ($i = 0 ; $i < count($datas) ; $i++) {
+        for ($i = 0; $i < count($datas); $i++) {
 
             $data = $datas[$i];
             $indexExists = array_search($data['name'], array_column($channels, 'name'));
             if ($indexExists) {
                 $channel = $channels[$indexExists];
-
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
-                    'name'       => $channel->name,
+                    'name' => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => $channel->type === 4,
-                    'parent_id'  => $data['parent_id'] ?? null
+                    'parent' => $channel->type === 4
                 ]);
-                if (isset($data['parent_id'])) {
-                    var_dump($data['parent_id']);
-                }
                 $this->info($data['name'] . ' Updated!');
-                //                if ($channel->type !== 4) {
-                //                    DiscordMessage::createMessage([
-                //                        'adminDiscordId' => 1,
-                //                        'title'          => "Update For " . ucfirst($channel->name),
-                //                        'description'    => ucfirst($channel->name) . " Initialization Updated Successfully.",
-                //                        'webhook'        => str_replace('dlp-', '', $channel->name),
-                //                    ]);
-                //
-                //                    $this->info(ucfirst($channel->name) . ' Update finished successfully');
-                //                    $this->info('Check First Message In ' . ucfirst($channel->name));
-                //                }
                 if ($channel->type === 4) {
                     return $channel;
                 }
@@ -84,18 +68,17 @@ class InitWebhookDiscordChannels extends Command
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
-                    'name'       => $channel->name,
+                    'name' => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => $channel->type === 4,
-                    'parent_id'  => $channel->type === 4 ? null : $data['parent_id']
+                    'parent' => $channel->type === 4
                 ]);
 
                 if ($channel->type !== 4) {
                     DiscordMessage::createMessage([
                         'adminDiscordId' => 1,
-                        'title'          => "Initialization For " . ucfirst($channel->name),
-                        'description'    => ucfirst($channel->name) . " Initialization Finished Successfully.",
-                        'webhook'        => str_replace('dlp-', '', $channel->name),
+                        'title' => "Initialization For " . ucfirst($channel->name),
+                        'description' => ucfirst($channel->name) . " Initialization Finished Successfully.",
+                        'webhook' => $channel->name,
                     ]);
 
                     $this->info(ucfirst($channel->name) . ' Initialization finished successfully');
@@ -106,7 +89,6 @@ class InitWebhookDiscordChannels extends Command
                 $this->newLine();
             }
         }
-
         return true;
     }
 
@@ -130,7 +112,7 @@ class InitWebhookDiscordChannels extends Command
             $this->info('Initialization for Channels finished successfully');
 
             $dataRole = [
-                'name'  => 'Bans',
+                'name' => 'Bans',
                 'color' => 255,
             ];
             $endpoint = Discord::CREATE_ROLE->endpoint(['guildId' => env('DISCORD_BOT_GUILD_LOGS')]);
@@ -139,7 +121,7 @@ class InitWebhookDiscordChannels extends Command
                 env('DISCORD_BOT_TOKEN'), 'Bot', false, 'GET');
             $indexExists = array_search($dataRole['name'], array_column($exists, 'name'));
 
-            if ( !$indexExists) {
+            if (!$indexExists) {
                 $role = $api->apiRequest("{$endpoint}", json_encode($dataRole),
                     env('DISCORD_BOT_TOKEN'), 'Bot', true);
                 if ($role) {

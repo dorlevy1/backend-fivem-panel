@@ -20,6 +20,8 @@ class RedeemCodeRequest extends Model
         'discord_id',
         'channel_id'
     ];
+    protected $connection = 'second_db';
+
 
     public function redeem_code()
     {
