@@ -25,7 +25,7 @@ class DiscordRepository
         $pending_permissions = PendingPermission::where('discord_id', '=', strval($userData->id))->first();
         $permissions = Permission::where('discord_id', '=', strval($userData->id))->first();
 
-        if ( !$pending_permissions && !$permissions) {
+        if (!$pending_permissions && !$permissions) {
             return (object)[
                 [
                     'message' => 'Unauthorized',
@@ -39,9 +39,9 @@ class DiscordRepository
                 'discord_id' => strval($userData->id),
             ],
             [
-                'avatar'         => $userData->avatar,
-                'username'       => $userData->username,
-                'global_name'    => $userData->global_name,
+                'avatar' => $userData->avatar,
+                'username' => $userData->username,
+                'global_name' => $userData->global_name,
                 'remember_token' => $token
             ]);
         $admin->update(['remember_token' => $token]);
@@ -49,7 +49,7 @@ class DiscordRepository
         if ($pending_permissions && !$permissions) {
             Permission::create([
                 'discord_id' => $pending_permissions->discord_id,
-                'scopes'     => $pending_permissions->scopes
+                'permission_type' => $pending_permissions->permission_type
             ]);
 
             $token = $this->attempt($pending_permissions->discord_id);
@@ -59,11 +59,11 @@ class DiscordRepository
                 $user->notify(new GrantedAccessNotification($userData->id));
                 $user->notify(new WebhookNotification([
                     'admin_discord' => $userData->id,
-                    'title'         => 'Granted Access For The First Time In DLPanel',
-                    'description'   => "<@{$userData->id}> Granted Access Successfully!",
-                    'webhook'       => "permissions",
-                    'fields'        => [],
-                    'components'    => [],
+                    'title' => 'Granted Access For The First Time In DLPanel',
+                    'description' => "<@{$userData->id}> Granted Access Successfully!",
+                    'webhook' => "permissions",
+                    'fields' => [],
+                    'components' => [],
                 ]));
 
             }
@@ -83,7 +83,7 @@ class DiscordRepository
     public function login($data)
     {
 
-        if ( !$data) {
+        if (!$data) {
             return response()->json([
                 'message' => 'Unauthorized',
             ], 401);
@@ -91,18 +91,18 @@ class DiscordRepository
 
         $token = $this->attempt($data->admin->discord_id);
 
-        if ( !$token) {
+        if (!$token) {
             return response()->json([
                 'message' => 'Unauthorized',
             ], 401);
         }
 
         return response()->json([
-            'user'          => auth()->user(),
-            'permissions'   => auth()->user()->permissions,
+            'user' => auth()->user(),
+            'permissions' => auth()->user()->permissions,
             'authorization' => [
                 'token' => $token,
-                'type'  => 'bearer',
+                'type' => 'bearer',
             ]
         ]);
 

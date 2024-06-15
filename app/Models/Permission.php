@@ -14,11 +14,8 @@ class Permission extends Model
 
     protected $table = 'admin_permissions';
 
-    protected $fillable = [
-        'discord_id',
-        'scopes',
-        'created_at',
-        'updated_at'
+    protected $guarded = [
+        'id'
     ];
     protected $casts = [
         'permissions' => 'array',
@@ -40,4 +37,5 @@ class Permission extends Model
     {
         return $this->belongsTo(PendingPermission::class, 'discord_id', 'discord_id');
     }
+
 }

@@ -21,4 +21,6 @@ enum Interaction: string
     case REDEEM_INSERT_WEAPONS = 'redeem_insert_weapons';
     case UPDATE_REDEEM = 'update_redeem';
     case DELETE_REDEEM = 'delete_redeem';
+    case DONE_REDEEM = 'done_redeem';
+    case UPDATE_FIRST_TIME = 'update_first_time';
 }

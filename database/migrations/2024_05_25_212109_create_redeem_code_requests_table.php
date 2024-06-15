@@ -31,6 +31,8 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::connection('second_db')->dropIfExists('redeem_code_requests');
+        Schema::connection('second_db')->table('redeem_code_requests', function (Blueprint $table) {
+            $table->dropIfExists();
+        });
     }
 };

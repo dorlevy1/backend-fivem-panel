@@ -14,8 +14,9 @@ return new class extends Migration {
         Schema::create('pending_permissions', function (Blueprint $table) {
             $table->id();
             $table->string('discord_id')->unique();
-            $table->string('scopes');
+            $table->foreignId('permission_type');
             $table->timestamps();
+            $table->foreign('permission_type')->references('id')->on('permission_types');
         });
     }
 
