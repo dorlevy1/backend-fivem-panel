@@ -7,6 +7,7 @@ use App\Feature;
 use App\Helpers\API;
 use App\Helpers\Discord\DiscordMessage;
 use App\Models\Criminal;
+use App\Models\DiscordBot;
 use App\Models\Gang;
 use App\Models\GangCreationRequest;
 use App\Models\Player;
@@ -56,6 +57,7 @@ class JoinToGang extends DiscordMessage implements Feature
             InteractionEnum::CHECK_UPDATE_ROLES->value => $this->check_update_roles($interaction),
             InteractionEnum::APPROVE_GANG->value => $this->approve_gang($interaction),
             InteractionEnum::DECLINE_GANG->value => $this->decline_gang($interaction),
+            InteractionEnum::SET_GANG_NAME->value => $this->set_gang_name($interaction),
             default => true,
         };
     }
@@ -63,29 +65,17 @@ class JoinToGang extends DiscordMessage implements Feature
     private function gang_request(In $interaction)
     {
 
-        $fields = [
-            [
-                'name' => 'Gang Member Registration Form',
-                'value' => 'Add a minimum of 10 and a maximum of 15 names of gang members. For each, write the full name, age, and Discord ID. Specify for each whether they are currently in the gang on the server or not, and whether they have a whitelist or not. Bosses and co-bosses over 16 are mandatory!'
-            ],
-            [
-                'name' => 'CID Submission Requirement',
-                'value' => 'Please specify the CID of each player in this field. Without this, you will not receive access in the game, and tickets on the subject will not receive a response if the CID is not entered here.'
-            ],
-            [
-                'name' => 'Gang Selection and Customization',
-                'value' => 'Choose from the available options the gang you desire. The chosen gang includes pre-defined color, neighborhood, status, etc., and the options before you are the currently available ones. For questions or extreme cases, please open a support ticket.'
-            ],
-            [
-                'name' => 'Approval Notification for Crime Server Access',
-                'value' => 'If approved, you will be notified and receive invitations to the crime server, along with corresponding roles. If not approved, you will also be informed.'
-            ]
-        ];
+        $instructions = DiscordBot::category('Gang Area')->where('label', '=', 'Instructions')->first()->value;
+
+        $fields = [];
+        foreach (json_decode($instructions) as $instruction) {
+            $fields[] = ['name' => $instruction->name, 'value' => $instruction->value];
+        }
 
         $select = StringSelect::new();
         foreach (DB::connection('second_db')->table('gangs_data')->where('available', '=', true)->get() as $gang) {
             $select->addOption(Option::new(ucfirst($gang->name), $gang->name . ' - ' . $gang->color_name))
-                ->setCustomId($gang->name);
+                ->setCustomId('set_gang_name+' . $gang->name);
         }
 
         $request = GangCreationRequest::where("discord_id", '=', $interaction->user->id)->first();
@@ -102,56 +92,41 @@ class JoinToGang extends DiscordMessage implements Feature
         $embed = $this->embed($this->client, $fields, 'Choose Gang');
 
         $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed)->addComponent($select), true);
+        $interaction->acknowledge();
+        return true;
+    }
 
-        $select->setListener(function (In $interaction, Collection $options) {
-            foreach ($options as $option) {
-                $fields = [
-                    ['name' => 'Chosen Gang', 'value' => $option->getValue()],
-                    ['name' => 'Request By', 'value' => "<@{$interaction->user->id}>"],
-                ];
+    private function set_gang_name(In $interaction)
+    {
+        $name = explode('+', $interaction->data->custom_id)[1];
 
-                GangCreationRequest::updateOrCreate(['discord_id' => $interaction->user->id], [
-                    'gang_name' => $option->getLabel(),
-                    'boss' => null,
-                    'co_boss' => null,
-                    'members' => null,
-                    'channel_id' => null
-                ]);
+        $fields = [
+            ['name' => 'Chosen Gang', 'value' => $name],
+            ['name' => 'Request By', 'value' => "<@{$interaction->user->id}>"],
+        ];
 
-                $actionToTake = [
-                    [
-                        'name' => 'Command Usage',
-                        'value' => 'Please use the following command to register gang members:'
-                    ],
-                    [
-                        'name' => 'Command Syntax',
-                        'value' => '/gangmembers [boss_id] [co_boss_id] [member-1] [member-2] ... [member-10]'
-                    ],
-                    [
-                        'name' => 'Replace [boss]',
-                        'value' => 'Replace [boss] with the Discord Tag of the gang boss.'
-                    ],
-                    [
-                        'name' => 'Replace [co_boss]',
-                        'value' => 'Replace [co_boss] with the Discord Tag of the co-boss.'
-                    ],
-                    [
-                        'name' => 'Replace [member-1] to [member-10]',
-                        'value' => 'Replace [member-1] to [member-10] with the Discord Tags of the remaining gang members. Include at least 10 Tags and up to a maximum of 15 Tags.'
-                    ],
-                    ['name' => 'Separation', 'value' => 'Ensure each ID is separated by a space.'],
-                    [
-                        'name' => 'Execution',
-                        'value' => 'Once all IDs are correctly entered, execute the command to register the gang members.'
-                    ]
-                ];
-                $embed = $this->embed($this->client, $fields, 'Request Begin ');
-                $embed2 = $this->embed($this->client, $actionToTake, 'Add Your Gang Members!');
-                $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true);
-                $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed2), true);
-                $interaction->acknowledge();
-            }
-        }, $this->discord);
+        GangCreationRequest::updateOrCreate(['discord_id' => $interaction->user->id], [
+            'gang_name' => $name,
+            'boss' => null,
+            'co_boss' => null,
+            'members' => null,
+            'channel_id' => null
+        ]);
+
+
+        $instructions = DiscordBot::category('Gang Area')->where('label', '=', 'Member Instructions')->first()->value;
+
+        $actionToTake = [];
+        foreach (json_decode($instructions) as $instruction) {
+            $actionToTake[] = ['name' => $instruction->name, 'value' => $instruction->value];
+        }
+
+        $embed = $this->embed($this->client, $fields, 'Request Begin ');
+        $embed2 = $this->embed($this->client, $actionToTake, 'Add Your Gang Members!');
+        $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true);
+        $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed2), true);
+        $interaction->acknowledge();
+        return true;
     }
 
     /**
@@ -195,7 +170,6 @@ class JoinToGang extends DiscordMessage implements Feature
         $guild->channels->save($interaction->channel);
         $interaction->message->delete();
         $interaction->channel->sendMessage($builder)->done();
-
         if (!$talkTo) {
             $button1 = Button::new(Button::STYLE_DANGER)->setCustomId('decline_gang+' . $interaction->user->id);
             $button1->setLabel('Decline');

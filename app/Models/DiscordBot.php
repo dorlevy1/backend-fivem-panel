@@ -18,25 +18,25 @@ class DiscordBot extends Model
     protected $table = 'discord_bot';
 
 
-    public function value(): Attribute
-    {
-        return new Attribute(
-            get: function ($value) {
-                try {
-                    return str_replace('"', '',
-                        Crypt::decryptString($value));
-                } catch (\RuntimeException $e) {
-                    return json_decode($value);
-                }
-            });
+//    public function value(): Attribute
+//    {
+//        return new Attribute(
+//            get: function ($value) {
+//                try {
+//                    return str_replace('"', '',
+//                        Crypt::decryptString($value));
+//                } catch (\RuntimeException $e) {
+//                    return json_decode($value);
+//                }
+//            });
+//
+//    }
 
-    }
-
-    public
-    function scopeCategory(
+    public function scopeCategory(
         Builder $query,
-        $category
-    ) {
+                $category
+    )
+    {
         return $query->where('category', '=', $category);
     }
 
