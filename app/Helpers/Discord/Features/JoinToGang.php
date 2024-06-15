@@ -83,7 +83,6 @@ class JoinToGang extends DiscordMessage implements Feature
         ];
 
         $select = StringSelect::new();
-        var_dump(DB::connection('second_db')->table('gangs_data')->where('available', '=', true)->get());
         foreach (DB::connection('second_db')->table('gangs_data')->where('available', '=', true)->get() as $gang) {
             $select->addOption(Option::new(ucfirst($gang->name), $gang->name . ' - ' . $gang->color_name))
                 ->setCustomId($gang->name);
@@ -214,13 +213,13 @@ class JoinToGang extends DiscordMessage implements Feature
         return true;
     }
 
-    private function getDataRequest(In $interaction)
+    private function getDataRequest(In $interaction): object|false
     {
-        if (!($interaction->member->roles->get('id', 1218998274791440415))) {
+        if (!($interaction->member->roles->get('id', 1047571391496597527))) {
             $interaction->respondWithMessage(MessageBuilder::new()->setContent("You Don't Have Any Permissions For That Use..\nThis Log Sent to the Owner."),
                 true);
-            $interaction->guild->owner->sendMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}> Tried To Confirm Gang"));
-
+//            $interaction->guild->owner->sendMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}> Tried To Confirm Gang"));
+            $interaction->acknowledge();
             return false;
         }
 
@@ -239,84 +238,91 @@ class JoinToGang extends DiscordMessage implements Feature
     {
 
         $data = $this->getDataRequest($interaction);
-        $gangData = $data->gangData;
-        $gangRequest = $data->gangRequest;
+        if ($data) {
+
+            $gangData = $data->gangData;
+            $gangRequest = $data->gangRequest;
 
 
-        $gangMembers = explode(',', $gangRequest->members);
-        $gangMembers[] = $gangRequest->boss;
-        $gangMembers[] = $gangRequest->co_boss;
+            $gangMembers = explode(',', $gangRequest->members);
+            $gangMembers[] = $gangRequest->boss;
+            $gangMembers[] = $gangRequest->co_boss;
 
-        foreach (Player::all() as $player) {
-            foreach ($gangMembers as $member) {
-                if ($player->metadata->discord === 'discord:' . $gangRequest->boss) {
-                    Gang::updateOrCreate(['name' => $gangData->name], [
-                        'name' => $gangData->name,
-                        'owner' => $player->citizenid,
-                        'zones' => '[]',
-                        'picture' => '',
-                        'color' => "#{$gangData->color_hex}",
-                    ]);
-                }
-                if ($player->metadata->discord === 'discord:' . $member) {
-                    Criminal::where('identifier', '=',
-                        $player->citizenid)->update(['organization' => $gangData->name]);
+            foreach (Player::all() as $player) {
+                foreach ($gangMembers as $member) {
+                    if ($player->metadata->discord === 'discord:' . $gangRequest->boss) {
+                        Gang::updateOrCreate(['name' => $gangData->name], [
+                            'name' => $gangData->name,
+                            'owner' => $player->citizenid,
+                            'zones' => '[]',
+                            'picture' => '',
+                            'color' => "#{$gangData->color_hex}",
+                        ]);
+                    }
+                    if ($player->metadata->discord === 'discord:' . $member) {
+                        Criminal::where('identifier', '=',
+                            $player->citizenid)->update(['organization' => $gangData->name]);
+                    }
                 }
             }
+
+
+            $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+
+            $ch = $guild->channels->get('id', $gangRequest->channel_id);
+
+            $fields = [
+                ['name' => 'Approved By', 'value' => "<@{$interaction->user->id}>"]
+            ];
+
+            $embed = $this->embed($this->client, $fields, 'Action Approved');
+            $member = $guild->members->get('id', $gangRequest->discord_id);
+            $ch->name = $member->user->displayname . '-!Approved!🟢';
+            $ch->setPermissions($guild->members->get('id', $interaction->user->id),
+                ['view_channel', 'send_messages'])->done();
+            $guild->channels->save($ch);
+
+
+            return $this->sendAnsweredMessageGangRequest($gangRequest, $interaction, $embed, $ch);
         }
-
-
-        $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
-
-        $ch = $guild->channels->get('id', $gangRequest->channel_id);
-
-        $fields = [
-            ['name' => 'Approved By', 'value' => "<@{$interaction->user->id}>"]
-        ];
-
-        $embed = $this->embed($this->client, $fields, 'Action Approved');
-        $member = $guild->members->get('id', $gangRequest->discord_id);
-        $ch->name = $member->user->displayname . '-!Approved!🟢';
-        $ch->setPermissions($guild->members->get('id', $interaction->user->id),
-            ['view_channel', 'send_messages'])->done();
-        $guild->channels->save($ch);
-
-
-        return $this->sendAnsweredMessageGangRequest($gangRequest, $interaction, $embed, $ch);
+        return false;
     }
 
-    private function decline_gang(In $interaction): true
+    private function decline_gang(In $interaction): bool
     {
         $data = $this->getDataRequest($interaction);
-        $gangRequest = $data->gangRequest;
+        if ($data) {
 
-        $interaction->showModal('Add Reason', 'reason_modal',
-            [
-                ActionRow::new()->addComponent(TextInput::new("Reason",
-                    TextInput::STYLE_PARAGRAPH)->setCustomId('reason'))
-            ],
-            function (In $interaction, Collection $components) use ($gangRequest) {
-                $reason = $components['reason']['value'];
+            $gangRequest = $data->gangRequest;
 
-                $fields = [
-                    ['name' => 'Decline By', 'value' => "<@{$interaction->user->id}>"],
-                    ['name' => '**Reason**', 'value' => $reason],
-                ];
-                $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+            $interaction->showModal('Add Reason', 'reason_modal',
+                [
+                    ActionRow::new()->addComponent(TextInput::new("Reason",
+                        TextInput::STYLE_PARAGRAPH)->setCustomId('reason'))
+                ],
+                function (In $interaction, Collection $components) use ($gangRequest) {
+                    $reason = $components['reason']['value'];
 
-                $ch = $guild->channels->get('id', $gangRequest->channel_id);
+                    $fields = [
+                        ['name' => 'Decline By', 'value' => "<@{$interaction->user->id}>"],
+                        ['name' => '**Reason**', 'value' => $reason],
+                    ];
+                    $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
 
-                $embed = $this->embed($this->client, $fields, 'Action Decline');
-                $member = $guild->members->get('id', $gangRequest->discord_id);
-                $ch->name = $member->user->displayname . '-!Decline!🔴';
-                $ch->setPermissions($guild->members->get('id', $interaction->user->id),
-                    ['view_channel'], ['send_messages'])->done();
-                $guild->channels->save($ch);
+                    $ch = $guild->channels->get('id', $gangRequest->channel_id);
 
-                return $this->sendAnsweredMessageGangRequest($gangRequest, $interaction, $embed, $ch);
-            });
+                    $embed = $this->embed($this->client, $fields, 'Action Decline');
+                    $member = $guild->members->get('id', $gangRequest->discord_id);
+                    $ch->name = $member->user->displayname . '-!Decline!🔴';
+                    $ch->setPermissions($guild->members->get('id', $interaction->user->id),
+                        ['view_channel'], ['send_messages'])->done();
+                    $guild->channels->save($ch);
 
-        return true;
+                    return $this->sendAnsweredMessageGangRequest($gangRequest, $interaction, $embed, $ch);
+                });
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -416,6 +422,7 @@ class JoinToGang extends DiscordMessage implements Feature
         $this->createButtonChannel($guild);
         $this->createLogPage($guild);
 
+
     }
 
     public function createCat(): Guild|string
@@ -501,6 +508,58 @@ class JoinToGang extends DiscordMessage implements Feature
         } catch (\ErrorException $e) {
             return;
         }
+    }
+
+
+    private function messageSummaryRequest(In $interaction)
+    {
+        $request = GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first();
+        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
+
+        $talkTo = '';
+        $text = '';
+        $rolesBoss = $guild->members->get('id', $request->boss)->roles;
+        $rolesCo = $guild->members->get('id', $request->co_boss)->roles;
+        $exists = array_key_exists(1192227507508871349, $rolesBoss->toArray()) ? ' ' . '✅' : ' ' . '❌';
+        $existsCo = array_key_exists(1192227507508871349, $rolesCo->toArray()) ? ' ' . '✅' : ' ' . '❌';
+
+        $boss = Player::all()->first(function ($player) use ($request) {
+            return $player->metadata->discord === 'discord:' . $request->boss;
+        });
+
+        $coboss = Player::all()->first(function ($player) use ($request) {
+            return $player->metadata->discord === 'discord:' . $request->boss;
+        });
+
+        $text .= "Boss -  <@{$request->boss}>";
+        $text .= $boss ? "**CID**: {$boss->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
+
+        $text .= "Co Boss -  <@{$request->co_boss}>";
+        $text .= $coboss ? "**CID**: {$coboss->citizenid} {$existsCo} \n\n" : "{$existsCo} (Also Doesn't Have Player In City) \n\n";
+
+
+        foreach (explode(',', $request->members) as $key => $member) {
+            $roles = $guild->members->get('id', $member)->roles;
+            if (array_key_exists(1192227507508871349, $roles->toArray())) {
+                $roleExists = true;
+            } else {
+                $roleExists = false;
+                $talkTo .= "<@{$member}> ";
+            }
+            $exists = $roleExists ? ' ' . '✅' : ' ' . '❌';
+            $key = $key + 1;
+
+            $player = Player::all()->first(function ($player) use ($member) {
+                return $player->metadata->discord === 'discord:' . $member;
+            });
+            $text .= "Member No.{$key} -  <@{$member}> ";
+            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
+
+        }
+        $embed = $this->createSummaryRequestEmbed($this->client, $interaction, $text, empty($talkTo), $talkTo);
+
+
+        return MessageBuilder::new()->addEmbed($embed);
     }
 
 }

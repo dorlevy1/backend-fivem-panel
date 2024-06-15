@@ -117,6 +117,7 @@ class RedeemCode extends DiscordMessage implements Feature
         $this->createCat();
         $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
         $this->createMainChannel($guild);
+
         $this->createLogPage($guild);
 
 
@@ -185,13 +186,13 @@ class RedeemCode extends DiscordMessage implements Feature
         try {
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
 
-            if (!is_null($guild->channels->get('name', 'redeem-codes'))) {
+            if (!is_null($guild->channels->get('name', 'dlp-redeem-codes'))) {
 
                 Webhook::updateOrCreate([
-                    'name' => 'redeem-codes'
+                    'name' => 'dlp-redeem-codes'
                 ], [
-                    'name' => $guild->channels->get('name', 'redeem-codes')->name,
-                    'channel_id' => $guild->channels->get('name', 'redeem-codes')->id,
+                    'name' => $guild->channels->get('name', 'dlp-redeem-codes')->name,
+                    'channel_id' => $guild->channels->get('name', 'dlp-redeem-codes')->id,
                     'parent' => false
                 ]);
 
@@ -202,7 +203,7 @@ class RedeemCode extends DiscordMessage implements Feature
 
 
             $channel = $guild->channels->create([
-                'name' => 'redeem-codes',
+                'name' => 'dlp-redeem-codes',
                 'type' => Channel::TYPE_GUILD_TEXT,
                 'parent_id' => $category,
                 'nsfw' => false
@@ -498,7 +499,7 @@ class RedeemCode extends DiscordMessage implements Feature
         $embed = $this->createSummaryRequest($request);
         $in->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true)->done();
 
-        $webhook = Webhook::where('name', '=', 'redeem-codes')->first()->channel_id;
+        $webhook = Webhook::where('name', '=', 'dlp-redeem-codes')->first()->channel_id;
 
         $channel = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'))->channels->get('id', $webhook);
         $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
