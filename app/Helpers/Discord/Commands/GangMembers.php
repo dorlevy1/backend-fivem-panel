@@ -34,17 +34,17 @@ class GangMembers extends DiscordCommand implements Command
         });
     }
 
-    public function interaction($name, $interaction)
+    public function interaction()
     {
 
     }
 
-    private function addGang(In $interaction): bool
+    private function addGang(In $interaction): void
     {
         $text = "";
         $readyForRequest = true;
         $talkTo = '';
-        $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
 
 
         $request = GangCreationRequest::where("discord_id", '=', $interaction->user->id)->first();
@@ -55,7 +55,7 @@ class GangMembers extends DiscordCommand implements Command
             $interaction->respondWithMessage($builder->setContent("You Already Have Exists Request.\n<#{$request->channel_id}>"),
                 true);
 
-            return false;
+            return;
         }
 
         foreach ($interaction->data->options as $option) {
@@ -146,7 +146,14 @@ class GangMembers extends DiscordCommand implements Command
                     }
 
                     $channel->sendMessage($builder)->done();
-                    $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+
+                    $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
+
+                    $content = empty($talkTo) ? "<#$channel->id> Has Created Successfully." : "<#$channel->id> Has Created Successfully.\n**Please Notice!**\nYou have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button in <#$channel->id>";
+
+                    $interaction->respondWithMessage(MessageBuilder::new()->setContent($content),
+                        true)->done();
+                    $interaction->acknowledge();
 
                     if (empty($talkTo)) {
                         $action = ActionRow::new();
@@ -158,18 +165,13 @@ class GangMembers extends DiscordCommand implements Command
                         $action->addComponent($button2);
                         $builder->addComponent($action);
                     }
-                    empty($talkTo) && $guild->channels->get('name', 'gang-requests')->sendMessage($builder);
 
-                    $content = empty($talkTo) ? "<#$channel->id> Has Created Successfully." : "<#$channel->id> Has Created Successfully.\n**Please Notice!**\nYou have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button in <#$channel->id>";
-
-                    $interaction->respondWithMessage(MessageBuilder::new()->setContent($content),
-                        true);
+                    empty($talkTo) && $guild->channels->get('name', 'dlp-gang-requests')->sendMessage($builder);
                 });
             });
 
         })->done();
 
-        return true;
     }
 
     public function addOptions(): void

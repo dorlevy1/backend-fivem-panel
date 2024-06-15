@@ -41,7 +41,7 @@ use Discord\WebSockets\Event;
         $this->client->run();
     }
 
-    private function interactions($d)
+    private function interactions($d): void
     {
         $array = array_merge($this->featuresClasses, $this->commandClasses);
 

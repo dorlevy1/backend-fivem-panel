@@ -70,6 +70,7 @@ class RedeemCode extends DiscordMessage implements Feature
     public function createMainChannel(Guild $guild): void
     {
 
+        $category = Webhook::where('name', '=', 'Redeem Code Area')->first()->channel_id;
         if ( !is_null($guild->channels->get('name', 'create-redeem-code'))) {
 
             Webhook::updateOrCreate([
@@ -77,13 +78,13 @@ class RedeemCode extends DiscordMessage implements Feature
             ], [
                 'name'       => $guild->channels->get('name', 'create-redeem-code')->name,
                 'channel_id' => $guild->channels->get('name', 'create-redeem-code')->id,
-                'parent'     => false
+                'parent'     => false,
+                'parent_id'  => $category
+
             ]);
 
             return;
         }
-
-        $category = Webhook::where('name', '=', 'Redeem Code Area')->first()->channel_id;
 
 
         $channel = $guild->channels->create([
@@ -94,14 +95,16 @@ class RedeemCode extends DiscordMessage implements Feature
         ]);
 
 
-        $guild->channels->save($channel)->then(function (Channel $channel) use ($guild) {
+        $guild->channels->save($channel)->then(function (Channel $channel) use ($guild, $category) {
 
             Webhook::updateOrCreate([
                 'name' => $channel->name
             ], [
                 'name'       => $channel->name,
                 'channel_id' => $channel->id,
-                'parent'     => false
+                'parent'     => false,
+                'parent_id'  => $category
+
             ]);
 
             $this->createButtonChannel($guild);
@@ -115,7 +118,7 @@ class RedeemCode extends DiscordMessage implements Feature
     {
 
         $this->createCat();
-        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
+        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
         $this->createMainChannel($guild);
         $this->createLogPage($guild);
 
@@ -142,7 +145,7 @@ class RedeemCode extends DiscordMessage implements Feature
     public function createCat(): Guild|string
     {
         try {
-            $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
+            $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
             if ( !is_null($guild->channels->get('name', 'Redeem Code Area'))) {
 
                 Webhook::updateOrCreate([
@@ -181,39 +184,41 @@ class RedeemCode extends DiscordMessage implements Feature
     public function createLogPage(Guild $guild): void
     {
         try {
-            $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
+            $category = Webhook::where('name', '=', 'DLPanel')->first()->channel_id;
 
-            if ( !is_null($guild->channels->get('name', 'redeem-codes'))) {
+            if ( !is_null($guild->channels->get('name', 'dlp-redeem-codes'))) {
 
                 Webhook::updateOrCreate([
-                    'name' => 'redeem-codes'
+                    'name' => 'dlp-redeem-codes'
                 ], [
-                    'name'       => $guild->channels->get('name', 'redeem-codes')->name,
-                    'channel_id' => $guild->channels->get('name', 'redeem-codes')->id,
-                    'parent'     => false
+                    'name'       => $guild->channels->get('name', 'dlp-redeem-codes')->name,
+                    'channel_id' => $guild->channels->get('name', 'dlp-redeem-codes')->id,
+                    'parent'     => false,
+                    'parent_id'  => $category
+
                 ]);
 
                 return;
             }
 
-            $category = Webhook::where('name', '=', 'DLPanel')->first()->channel_id;
-
 
             $channel = $guild->channels->create([
-                'name'      => 'redeem-codes',
+                'name'      => 'dlp-redeem-codes',
                 'type'      => Channel::TYPE_GUILD_TEXT,
                 'parent_id' => $category,
                 'nsfw'      => false
             ]);
 
 
-            $guild->channels->save($channel)->then(function (Channel $channel) use ($guild) {
+            $guild->channels->save($channel)->then(function (Channel $channel) use ($guild, $category) {
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
                     'name'       => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => false
+                    'parent'     => false,
+                    'parent_id'  => $category
+
                 ]);
             })->done();
 
@@ -486,7 +491,6 @@ class RedeemCode extends DiscordMessage implements Feature
 
         $embed = $this->createSummaryRequest($request);
         $in->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true)->done();
-        $in->deleteOriginalResponse();
         $in->acknowledge();
 
         $webhook = Webhook::where('name', '=', 'redeem-codes')->first()->channel_id;
@@ -518,6 +522,7 @@ class RedeemCode extends DiscordMessage implements Feature
             'weapons'    => $request->weapons,
             'vehicles'   => $request->vehicles,
             'items'      => $request->items,
+            'code'       => $redeem?->code,
             'cash'       => $request->cash,
 
         ]);

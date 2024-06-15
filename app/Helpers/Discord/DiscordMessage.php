@@ -109,54 +109,5 @@ use Discord\Parts\Interactions\Interaction as In;
     }
 
 
-    protected function messageSummaryRequest(In $interaction)
-    {
-        $request = GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first();
-
-        $talkTo = '';
-        $text = '';
-        $rolesBoss = $interaction->guild->members->get('id', $request->boss)->roles;
-        $rolesCo = $interaction->guild->members->get('id', $request->co_boss)->roles;
-        $exists = array_key_exists(1192227507508871349, $rolesBoss->toArray()) ? ' ' . '✅' : ' ' . '❌';
-        $existsCo = array_key_exists(1192227507508871349, $rolesCo->toArray()) ? ' ' . '✅' : ' ' . '❌';
-
-        $boss = Player::all()->first(function ($player) use ($request) {
-            return $player->metadata->discord === 'discord:' . $request->boss;
-        });
-
-        $coboss = Player::all()->first(function ($player) use ($request) {
-            return $player->metadata->discord === 'discord:' . $request->boss;
-        });
-
-        $text .= "Boss -  <@{$request->boss}>";
-        $text .= $boss ? "**CID**: {$boss->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
-
-        $text .= "Co Boss -  <@{$request->co_boss}>";
-        $text .= $coboss ? "**CID**: {$coboss->citizenid} {$existsCo} \n\n" : "{$existsCo} (Also Doesn't Have Player In City) \n\n";
-
-
-        foreach (explode(',', $request->members) as $key => $member) {
-            $roles = $interaction->guild->members->get('id', $member)->roles;
-            if (array_key_exists(1192227507508871349, $roles->toArray())) {
-                $roleExists = true;
-            } else {
-                $roleExists = false;
-                $talkTo .= "<@{$member}> ";
-            }
-            $exists = $roleExists ? ' ' . '✅' : ' ' . '❌';
-            $key = $key + 1;
-
-            $player = Player::all()->first(function ($player) use ($member) {
-                return $player->metadata->discord === 'discord:' . $member;
-            });
-            $text .= "Member No.{$key} -  <@{$member}> ";
-            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
-
-        }
-        $embed = $this->createSummaryRequestEmbed($this->client, $interaction, $text, empty($talkTo), $talkTo);
-
-
-        return MessageBuilder::new()->addEmbed($embed);
-    }
 
 }

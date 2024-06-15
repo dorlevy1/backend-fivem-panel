@@ -30,7 +30,6 @@ abstract class Message
     }
 
 
-
     public static function createMessage($data)
     {
         $data = (object)$data;
@@ -48,17 +47,16 @@ abstract class Message
             $details['reply'] = [
                 'message_id' => $data->reply,
                 'guild_id'   => env('DISCORD_BOT_GUILD_LOGS'),
-                'channel_id' => Webhook::where('name', '=', 'bans')->first()->channel_id
+                'channel_id' => Webhook::where('name', '=', $data->webhook)->first()->channel_id
             ];
         }
 
         $message = self::createDraft($details);
-
         (new Webhook())->notify(new WebhookNotification([
             'admin_discord' => $data->adminDiscordId,
             'message'       => $message,
             'id'            => $data->id ?? null,
-            'webhook'       => $data->webhook
+            'webhook'       => str_replace('dlp-', '', $data->webhook)
         ]));
 
         return true;
@@ -99,7 +97,6 @@ abstract class Message
 
         return $details;
     }
-
 
 
 }

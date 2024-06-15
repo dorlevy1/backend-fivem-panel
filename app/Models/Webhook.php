@@ -11,8 +11,7 @@ class Webhook extends Model
 
     use HasFactory, Notifiable;
 
-    protected $fillable = ['name', 'parent', 'channel_id'];
-
+    protected $guarded = ['id'];
     const UPDATED_AT = null;
     const CREATED_AT = null;
 }

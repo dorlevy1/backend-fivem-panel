@@ -21,8 +21,13 @@ class DiscordAPI
         $this->guild_id = env('DISCORD_BOT_GUILD');
     }
 
-    public function createMessageAPI($title, $description, $fields = [], $components = [], $message_reference = []): array
-    {
+    public function createMessageAPI(
+        $title,
+        $description,
+        $fields = [],
+        $components = [],
+        $message_reference = []
+    ): array {
 
         return [
             "embeds"            => [
@@ -105,8 +110,9 @@ class DiscordAPI
     {
         $id = match ($data['type']) {
             'user' => $this->getChannel($data['id']),
-            'webhook' => Webhook::where('name', '=', $data['name'])->first()->channel_id,
+            'webhook' => Webhook::where('name', '=', 'dlp-' . $data['name'])->first()->channel_id,
         };
+
 
         try {
             $endpoint = Discord::SEND_MESSAGE->endpoint(['channelId' => $id]);

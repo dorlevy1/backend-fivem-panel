@@ -18,7 +18,7 @@ class InitWebhookDiscordChannels extends Command
      *
      * @var string
      */
-    protected $signature = 'init-webhook-discord-channels';
+    protected $signature = 'init-channels';
 
     /**
      * The console command description.
@@ -48,14 +48,30 @@ class InitWebhookDiscordChannels extends Command
             $indexExists = array_search($data['name'], array_column($channels, 'name'));
             if ($indexExists) {
                 $channel = $channels[$indexExists];
+
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
                     'name'       => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => $channel->type === 4
+                    'parent'     => $channel->type === 4,
+                    'parent_id'  => $data['parent_id'] ?? null
                 ]);
+                if (isset($data['parent_id'])) {
+                    var_dump($data['parent_id']);
+                }
                 $this->info($data['name'] . ' Updated!');
+                //                if ($channel->type !== 4) {
+                //                    DiscordMessage::createMessage([
+                //                        'adminDiscordId' => 1,
+                //                        'title'          => "Update For " . ucfirst($channel->name),
+                //                        'description'    => ucfirst($channel->name) . " Initialization Updated Successfully.",
+                //                        'webhook'        => str_replace('dlp-', '', $channel->name),
+                //                    ]);
+                //
+                //                    $this->info(ucfirst($channel->name) . ' Update finished successfully');
+                //                    $this->info('Check First Message In ' . ucfirst($channel->name));
+                //                }
                 if ($channel->type === 4) {
                     return $channel;
                 }
@@ -70,7 +86,8 @@ class InitWebhookDiscordChannels extends Command
                 ], [
                     'name'       => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => $channel->type === 4
+                    'parent'     => $channel->type === 4,
+                    'parent_id'  => $channel->type === 4 ? null : $data['parent_id']
                 ]);
 
                 if ($channel->type !== 4) {
@@ -78,7 +95,7 @@ class InitWebhookDiscordChannels extends Command
                         'adminDiscordId' => 1,
                         'title'          => "Initialization For " . ucfirst($channel->name),
                         'description'    => ucfirst($channel->name) . " Initialization Finished Successfully.",
-                        'webhook'        => $channel->name,
+                        'webhook'        => str_replace('dlp-', '', $channel->name),
                     ]);
 
                     $this->info(ucfirst($channel->name) . ' Initialization finished successfully');
@@ -89,6 +106,7 @@ class InitWebhookDiscordChannels extends Command
                 $this->newLine();
             }
         }
+
         return true;
     }
 
@@ -100,12 +118,12 @@ class InitWebhookDiscordChannels extends Command
         try {
             $mainChannel = $this->checkOrInsert([['name' => 'DLPanel', 'type' => 4]]);
             $this->checkOrInsert([
-                ['name' => 'bans', 'parent_id' => $mainChannel->id],
-                ['name' => 'kicks', 'parent_id' => $mainChannel->id],
-                ['name' => 'warns', 'parent_id' => $mainChannel->id],
-                ['name' => 'permissions', 'parent_id' => $mainChannel->id],
-                ['name' => 'announcements', 'parent_id' => $mainChannel->id],
-                ['name' => 'redeem-codes', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-bans', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-kicks', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-warns', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-permissions', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-announcements', 'parent_id' => $mainChannel->id],
+                ['name' => 'dlp-redeem-codes', 'parent_id' => $mainChannel->id],
             ]);
 
 

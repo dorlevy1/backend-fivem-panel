@@ -32,6 +32,8 @@ class DiscordWebhook
                 return $this->warnWebhook($message);
             case Webhook::REDEEM->value:
                 return $this->redeemWebhook($message);
+                case Webhook::PERMISSION->value:
+                return $this->permissionWebhook($message);
             case Webhook::GANG_CREATION->value:
                 return $this->gangCreationWebhook($message);
             case Webhook::PRIVATE_USER->value:
@@ -51,7 +53,7 @@ class DiscordWebhook
 
     public function announceWebhook($message)
     {
-        return $this->api->sendMessage($message, ['type' => 'webhook', 'name' => 'announce']);
+        return $this->api->sendMessage($message, ['type' => 'webhook', 'name' => 'announcements']);
     }
 
     public function kickWebhook($message)
@@ -61,8 +63,14 @@ class DiscordWebhook
 
     public function redeemWebhook($message)
     {
-        return $this->api->sendMessage($message, ['type' => 'webhook', 'name' => 'redeem-code']);
+        return $this->api->sendMessage($message, ['type' => 'webhook', 'name' => 'redeem-codes']);
     }
+
+    public function permissionWebhook($message)
+    {
+        return $this->api->sendMessage($message, ['type' => 'webhook', 'name' => 'permissions']);
+    }
+
 
     public function gangCreationWebhook($message)
     {

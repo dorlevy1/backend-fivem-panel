@@ -67,7 +67,7 @@ class Interaction extends DiscordMessage
             ],
         ];
 
-        $reply && $this->removeMessage(Webhook::where('name', '=', 'bans')->first()->channel_id,
+        $reply && $this->removeMessage(Webhook::where('name', '=', 'dlp-bans')->first()->channel_id,
             $reply);
         $this->message([
             'playerDiscordId' => $playerDiscordId,
@@ -99,28 +99,28 @@ class Interaction extends DiscordMessage
             $ban = Ban::where('discord', 'LIKE', '%' . $discord_id_ban . '%')->first();
             if (is_null($ban)) {
                 $this->createMessage([
-                    'adminDiscordId' => $interaction['member']['user']->id,
+                    'adminDiscordId' => $interaction->user->id,
                     'title'          => "No Access Removed Ban",
-                    'description'    => "<@{$interaction['member']['user']->id}> Tried To Remove Ban Which Not Exists",
-                    'webhook'        => 'bans',
-                    'reply'          => $interaction['message']['id']
+                    'description'    => "<@{$interaction->user->id}> Tried To Remove Ban Which Not Exists",
+                    'webhook'        => 'dlp-bans',
+                    'reply'          => $interaction->message->id
                 ]);
                 $interaction->acknowledge();
 
                 return false;
             }
-            $this->removeBan($interaction['message']['id'], $discord_id_ban,
-                $interaction['member']['user']->id, $ban);
+            $this->removeBan($interaction->message->id, $discord_id_ban,
+                $interaction->user->id, $ban);
             $interaction->acknowledge();
 
             return true;
         } else {
             $this->createMessage([
-                'adminDiscordId' => $interaction['member']['user']->id,
+                'adminDiscordId' => $interaction->user->id,
                 'title'          => "No Access For Bans",
-                'description'    => "<@{$interaction['member']['user']->id}> Tried To Remove Ban For <@{$discord_id_ban}>",
-                'webhook'        => 'bans',
-                'reply'          => $interaction['message']['id']
+                'description'    => "<@{$interaction->user->id}> Tried To Remove Ban For <@{$discord_id_ban}>",
+                'webhook'        => 'dlp-bans',
+                'reply'          => $interaction->message->id
             ]);
             $interaction->acknowledge();
 

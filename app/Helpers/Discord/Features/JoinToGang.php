@@ -47,7 +47,7 @@ class JoinToGang extends DiscordMessage implements Feature
     /**
      * @throws \Exception
      */
-    public function interaction($interaction)
+    public function interaction(In $interaction)
     {
         $name = explode('+', $interaction->data->custom_id)[0];
 
@@ -215,7 +215,7 @@ class JoinToGang extends DiscordMessage implements Feature
 
     private function getDataRequest(In $interaction)
     {
-        if ( !($interaction->member->roles->get('id', 1218998274791440415))) {
+        if ( !($interaction->member->roles->get('id', 1047571391496597527))) {
             $interaction->respondWithMessage(MessageBuilder::new()->setContent("You Don't Have Any Permissions For That Use..\nThis Log Sent to the Owner."),
                 true);
             $interaction->guild->owner->sendMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}> Tried To Confirm Gang"));
@@ -343,14 +343,62 @@ class JoinToGang extends DiscordMessage implements Feature
         return true;
     }
 
+
+    private function messageSummaryRequest(In $interaction)
+    {
+        $request = GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first();
+        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
+
+        $talkTo = '';
+        $text = '';
+        $rolesBoss = $guild->members->get('id', $request->boss)->roles;
+        $rolesCo = $guild->members->get('id', $request->co_boss)->roles;
+        $exists = array_key_exists(1192227507508871349, $rolesBoss->toArray()) ? ' ' . '✅' : ' ' . '❌';
+        $existsCo = array_key_exists(1192227507508871349, $rolesCo->toArray()) ? ' ' . '✅' : ' ' . '❌';
+
+        $boss = Player::all()->first(function ($player) use ($request) {
+            return $player->metadata->discord === 'discord:' . $request->boss;
+        });
+
+        $coboss = Player::all()->first(function ($player) use ($request) {
+            return $player->metadata->discord === 'discord:' . $request->boss;
+        });
+
+        $text .= "Boss -  <@{$request->boss}>";
+        $text .= $boss ? "**CID**: {$boss->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
+
+        $text .= "Co Boss -  <@{$request->co_boss}>";
+        $text .= $coboss ? "**CID**: {$coboss->citizenid} {$existsCo} \n\n" : "{$existsCo} (Also Doesn't Have Player In City) \n\n";
+
+
+        foreach (explode(',', $request->members) as $key => $member) {
+            $roles = $guild->members->get('id', $member)->roles;
+            if (array_key_exists(1192227507508871349, $roles->toArray())) {
+                $roleExists = true;
+            } else {
+                $roleExists = false;
+                $talkTo .= "<@{$member}> ";
+            }
+            $exists = $roleExists ? ' ' . '✅' : ' ' . '❌';
+            $key = $key + 1;
+
+            $player = Player::all()->first(function ($player) use ($member) {
+                return $player->metadata->discord === 'discord:' . $member;
+            });
+            $text .= "Member No.{$key} -  <@{$member}> ";
+            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
+
+        }
+        $embed = $this->createSummaryRequestEmbed($this->client, $interaction, $text, empty($talkTo), $talkTo);
+
+
+        return MessageBuilder::new()->addEmbed($embed);
+    }
+
     public function createButtonChannel(Guild $guild): bool|string
     {
 
         try {
-            if ( !is_null($guild->channels->get('name', 'gang-requests'))) {
-                return false;
-            }
-
             $embed = $this->message->embed($this->client, [], 'Gang Creation Area');
             $builder = MessageBuilder::new();
             $ar = ActionRow::new();
@@ -370,6 +418,7 @@ class JoinToGang extends DiscordMessage implements Feature
 
     public function createMainChannel(Guild $guild): void
     {
+        $category = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
 
         if ( !is_null($guild->channels->get('name', 'join-to-gang'))) {
             Webhook::updateOrCreate([
@@ -377,13 +426,12 @@ class JoinToGang extends DiscordMessage implements Feature
             ], [
                 'name'       => $guild->channels->get('name', 'join-to-gang')->name,
                 'channel_id' => $guild->channels->get('name', 'join-to-gang')->id,
-                'parent'     => false
+                'parent'     => false,
+                'parent_id'  => $category
             ]);
 
             return;
         }
-
-        $category = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
 
         $channel = $guild->channels->create([
             'name'      => 'join-to-gang',
@@ -392,13 +440,15 @@ class JoinToGang extends DiscordMessage implements Feature
             'nsfw'      => false
         ]);
 
-        $guild->channels->save($channel)->then(function (Channel $channel) {
+        $guild->channels->save($channel)->then(function (Channel $channel) use ($category) {
             Webhook::updateOrCreate([
                 'name' => $channel->name
             ], [
                 'name'       => $channel->name,
                 'channel_id' => $channel->id,
-                'parent'     => false
+                'parent'     => false,
+                'parent_id'  => $category
+
             ]);
 
             return $channel;
@@ -458,41 +508,47 @@ class JoinToGang extends DiscordMessage implements Feature
     public function createLogPage(Guild $guild): void
     {
         try {
-            if ( !is_null($guild->channels->get('name', 'gang-requests'))) {
+            $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
+            $category = Webhook::where('name', '=', 'DLPanel')->first()->channel_id;
+
+            if ( !is_null($guild->channels->get('name', 'dlp-gang-requests'))) {
                 Webhook::updateOrCreate([
-                    'name' => 'gang-requests'
+                    'name' => 'dlp-gang-requests'
                 ], [
-                    'name'       => $guild->channels->get('name', 'gang-requests')->name,
-                    'channel_id' => $guild->channels->get('name', 'gang-requests')->id,
-                    'parent'     => false
+                    'name'       => $guild->channels->get('name', 'dlp-gang-requests')->name,
+                    'channel_id' => $guild->channels->get('name', 'dlp-gang-requests')->id,
+                    'parent'     => false,
+                    'parent_id'  => $category
+
                 ]);
 
                 return;
             }
 
-            $category = Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id;
             $channel = $guild->channels->create([
-                'name'      => 'gang-requests',
+                'name'      => 'dlp-gang-requests',
                 'type'      => Channel::TYPE_GUILD_TEXT,
                 'parent_id' => $category,
                 'nsfw'      => false
             ]);
 
 
-            $guild->channels->save($channel)->then(function (Channel $channel) use ($guild) {
+            $guild->channels->save($channel)->then(function (Channel $channel) use ($guild, $category) {
                 Webhook::updateOrCreate([
                     'name' => $channel->name
                 ], [
                     'name'       => $channel->name,
                     'channel_id' => $channel->id,
-                    'parent'     => false
+                    'parent'     => false,
+                    'parent_id'  => $category
+
                 ]);
 
-                $channel->setPermissions($guild->roles->get('name', '@everyone'),
-                    [], ['view_channel'])->done(function () use ($channel, $guild) {
-                    $channel->setPermissions($guild->roles->get('id', '1218998274791440415'), ['view_channel'],
-                        ['send_messages', 'attach_files', 'add_reactions'])->done();
-                });
+                //                $channel->setPermissions($guild->roles->get('name', '@everyone'),
+                //                    [], ['view_channel'])->done(function () use ($channel, $guild) {
+                //                    $channel->setPermissions($guild->roles->get('id', '1218998274791440415'), ['view_channel'],
+                //                        ['send_messages', 'attach_files', 'add_reactions'])->done();
+                //                });
             })->done();
 
             return;
