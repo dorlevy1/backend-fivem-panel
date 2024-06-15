@@ -30,7 +30,6 @@ class PlayerService
 
     public function playerConnecting($data): true
     {
-
         $this->connectingNotify->setData([
             'players' => $data->players,
             'player'  => $data->player,

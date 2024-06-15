@@ -13,10 +13,9 @@ return new class extends Migration {
     {
         Schema::create('action_permissions', function (Blueprint $table) {
             $table->id();
-            $table->string('discord_id');
-            $table->string('scopes');
+            $table->string('name');
             $table->timestamps();
-            $table->foreign('discord_id')->references('discord_id')->on('permissions');
+
 
         });
     }

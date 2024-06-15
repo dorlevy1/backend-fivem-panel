@@ -115,7 +115,7 @@ class RedeemCode extends DiscordMessage implements Feature
     {
 
         $this->createCat();
-        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
+        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
         $this->createMainChannel($guild);
         $this->createLogPage($guild);
 
@@ -133,6 +133,8 @@ class RedeemCode extends DiscordMessage implements Feature
             InteractionEnum::REDEEM_INSERT_ITEMS->value => $this->insert($interaction, 'Items', ''),
             InteractionEnum::REDEEM_INSERT_WEAPONS->value => $this->insert($interaction, 'Weapons', ''),
             InteractionEnum::REDEEM_INSERT_VEHICLES->value => $this->insert($interaction, 'Vehicles', ''),
+            InteractionEnum::UPDATE_FIRST_TIME->value => $this->chooseRedeemCode($interaction),
+            InteractionEnum::DONE_REDEEM->value => $this->finishRedeem($interaction),
             InteractionEnum::UPDATE_REDEEM->value => $this->update($interaction),
             InteractionEnum::DELETE_REDEEM->value => $this->delete($interaction),
             default => true,
@@ -142,7 +144,7 @@ class RedeemCode extends DiscordMessage implements Feature
     public function createCat(): Guild|string
     {
         try {
-            $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
+            $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
             if (!is_null($guild->channels->get('name', 'Redeem Code Area'))) {
 
                 Webhook::updateOrCreate([
@@ -249,12 +251,12 @@ class RedeemCode extends DiscordMessage implements Feature
             $fields[] = ['name' => 'Vehicles', 'value' => str_replace(',', "\n", $request->vehicles)];
         }
 
-//        if (!empty($request->weapons)) {
-//            $fields[] = ['name' => 'Weapons', 'value' => str_replace(',', "\n", $request->weapons)];
-//        }
+        if (!empty($request->weapons)) {
+            $fields[] = ['name' => 'Weapons', 'value' => str_replace(',', "\n", $request->weapons)];
+        }
 
         if (!empty($request->items)) {
-            $fields[] = ['name' => 'Items / Weapons', 'value' => str_replace(',', "\n", $request->items)];
+            $fields[] = ['name' => 'Items', 'value' => str_replace(',', "\n", $request->items)];
         }
 
         if (!empty($request->cash)) {
@@ -324,19 +326,22 @@ class RedeemCode extends DiscordMessage implements Feature
         return true;
     }
 
-    private function chooseRedeemCode(In $in, Member $member): void
+    private function chooseRedeemCode(In $in, Member|false $Member = false): true
     {
         $builder = MessageBuilder::new();
         $select = StringSelect::new()->setPlaceholder('Select One Of The Choices');
-        $select->addOption(Option::new('Items / Weapons', 'items'));
+        $select->addOption(Option::new('Items', 'items'));
         $select->addOption(Option::new('Weapons', 'weapons'));
         $select->addOption(Option::new('Vehicles', 'vehicles'));
         $select->addOption(Option::new('Cash', 'cash'));
         $select->setMinValues(1)->setMaxValues(1);
         $builder->addComponent($select);
         $in->sendFollowUpMessage($builder, true);
-
-        $select->setListener(function (In $i) use ($member) {
+        if (!$Member) {
+            $discord_id = explode('+', $in->data->custom_id)[1];
+            $Member = $in->guild->members->get('id', $discord_id);
+        }
+        $select->setListener(function (In $i) use ($Member) {
             if ($i->data->values[0] !== 'vehicles' && $i->data->values[0] !== 'cash') {
                 $contents = File::get(base_path("{$i->data->values[0]}.json"));
                 $json = json_decode($contents);
@@ -366,14 +371,18 @@ class RedeemCode extends DiscordMessage implements Feature
                     $items .= "**" . $item->label . "** , ";
                 }
             }
-            $this->sendInsertRedeemType($i, $member);
+            $this->sendInsertRedeemType($i, $Member);
             $i->acknowledge();
+            return true;
+
         }, $this->discord);
 
         $in->acknowledge();
+        return true;
+
     }
 
-    private function sendInsertRedeemType(In $i, Member $member): void
+    private function sendInsertRedeemType(In $i, Member $member): true
     {
         $builder = MessageBuilder::new();
         $ar = ActionRow::new();
@@ -383,20 +392,26 @@ class RedeemCode extends DiscordMessage implements Feature
         $builder->addComponent($ar);
         $i->sendFollowUpMessage($builder, true);
         $i->acknowledge();
+        return true;
+
     }
 
     private function insert(In $interaction, $type, $label)
     {
 
         $discord_id = explode('+', $interaction->data->custom_id)[1];
+        $member = $interaction->guild->members->get('id', $discord_id);
 
+        $button1 = Button::new(Button::STYLE_SUCCESS)->setCustomId('done_redeem+' . $member->user->id);
+        $button1->setLabel('Finish The Redeem');
+        $button2 = Button::new(Button::STYLE_SECONDARY)->setCustomId('update_first_time+' . $member->user->id);
+        $button2->setLabel('Add More');
         $interaction->showModal('Add ' . $type . ' Codes', Carbon::now(),
             [
                 ActionRow::new()->addComponent(TextInput::new($label,
                     TextInput::STYLE_PARAGRAPH)->setMaxLength(4000)->setCustomId(strtolower($type)))
             ],
-            function (In $in, Collection $components) use ($discord_id, $type) {
-                $member = $in->guild->members->get('id', $discord_id);
+            function (In $in, Collection $components) use ($member, $button1, $button2, $discord_id, $type) {
                 $request = RedeemCodeRequest::where(['discord_id' => $discord_id])->first();
                 $type = strtolower($type);
                 $value = $type !== 'cash' ?
@@ -416,26 +431,13 @@ class RedeemCode extends DiscordMessage implements Feature
                 $embed = $this->embed($this->discord, $fields, 'Chosen ' . $type);
                 $builder = MessageBuilder::new()->addEmbed($embed);
                 $ar = ActionRow::new();
-                $button1 = Button::new(Button::STYLE_SUCCESS)->setCustomId('done_' . $type . '+' . $member->user->id);
-                $button1->setLabel('Finish The Redeem');
-                $button2 = Button::new(Button::STYLE_SECONDARY)->setCustomId('add_more_' . $type . '+' . $member->user->id);
-                $button2->setLabel('Add More');
+
                 $ar->addComponent($button1);
                 $ar->addComponent($button2);
                 $builder->addComponent($ar);
                 $in->respondWithMessage($builder, true)->done();
                 $in->acknowledge();
-
-                $button1->setListener(function (In $interaction) use ($in, $member) {
-                    $this->finishRedeem($in, $member);
-                    $interaction->acknowledge();
-                }, $this->discord);
-
-                $button2->setListener(function (In $interaction) use ($in, $member) {
-                    $this->chooseRedeemCode($in, $member);
-                    $interaction->acknowledge();
-                }, $this->discord);
-                $in->acknowledge();
+                return true;
 
             });
         $interaction->acknowledge();
@@ -461,9 +463,11 @@ class RedeemCode extends DiscordMessage implements Feature
         return $randomString;
     }
 
-    private function finishRedeem(In $in, Member $member)
+    private function finishRedeem(In $in)
     {
 
+        $discord_id = explode('+', $in->data->custom_id)[1];
+        $member = $in->guild->members->get('id', $discord_id);
         $cid = Player::getData($member->user->id)->citizenid;
 
         $request = RedeemCodeRequest::where(['discord_id' => $member->user->id, 'citizenid' => $cid])->first();
@@ -493,13 +497,13 @@ class RedeemCode extends DiscordMessage implements Feature
 
         $embed = $this->createSummaryRequest($request);
         $in->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true)->done();
-        $in->deleteOriginalResponse();
-        $in->acknowledge();
 
         $webhook = Webhook::where('name', '=', 'redeem-codes')->first()->channel_id;
 
         $channel = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'))->channels->get('id', $webhook);
         $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
+        $in->acknowledge();
+        return true;
     }
 
     private function update(In $interaction)
@@ -508,6 +512,8 @@ class RedeemCode extends DiscordMessage implements Feature
         $member = $interaction->guild->members->get('id', $discord);
 
         $this->chooseRedeemCode($interaction, $member);
+        $interaction->acknowledge();
+        return true;
 
     }
 
@@ -521,7 +527,7 @@ class RedeemCode extends DiscordMessage implements Feature
         !is_null($request) && $request->delete();
 
         $embed = $this->embed($this->discord, [], 'Redeem Deleted');
-        $interaction->message->delete();
+        $interaction->deleteFollowUpMessage($interaction->message->id);
         $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed), true);
 
 

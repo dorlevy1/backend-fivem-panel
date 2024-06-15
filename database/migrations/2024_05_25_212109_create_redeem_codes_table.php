@@ -26,6 +26,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('redeem_codes');
+        Schema::connection('second_db')->dropIfExists('redeem_codes');
     }
 };
