@@ -39,7 +39,7 @@ use Illuminate\Http\Request;
     {
 
         $ban = Ban::create([
-            'discord'  => strval($data->player['metadata']['discord']),
+            'discord'  => strval($data->player['discord']),
             'license'  => strval($data->player['license']),
             'name'     => $data->player['name'],
             'ip'       => (new Request())->ip(),
@@ -62,7 +62,7 @@ use Illuminate\Http\Request;
         $this->sendSocket($this->bans->all());
         $user = auth()->user();
 
-        $discord_id = str_replace('discord:', '', $data->player['metadata']['discord']);
+        $discord_id = str_replace('discord:', '', $data->player['discord']);
         $time = date('Y-m-d h:i:s');
         $fields = [
             [

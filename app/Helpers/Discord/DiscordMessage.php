@@ -25,6 +25,56 @@ use Discord\Parts\Interactions\Interaction as In;
     }
 
 
+    protected function messageSummaryRequest(In $interaction)
+    {
+        $request = GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first();
+        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
+
+        $talkTo = '';
+        $text = '';
+        $rolesBoss = $guild->members->get('id', $request->boss)->roles;
+        $rolesCo = $guild->members->get('id', $request->co_boss)->roles;
+        $exists = array_key_exists(1192227507508871349, $rolesBoss->toArray()) ? ' ' . '✅' : ' ' . '❌';
+        $existsCo = array_key_exists(1192227507508871349, $rolesCo->toArray()) ? ' ' . '✅' : ' ' . '❌';
+
+        $boss = Player::all()->first(function ($player) use ($request) {
+            return $player->metadata->discord === 'discord:' . $request->boss;
+        });
+
+        $coboss = Player::all()->first(function ($player) use ($request) {
+            return $player->metadata->discord === 'discord:' . $request->boss;
+        });
+
+        $text .= "Boss -  <@{$request->boss}>";
+        $text .= $boss ? "**CID**: {$boss->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
+
+        $text .= "Co Boss -  <@{$request->co_boss}>";
+        $text .= $coboss ? "**CID**: {$coboss->citizenid} {$existsCo} \n\n" : "{$existsCo} (Also Doesn't Have Player In City) \n\n";
+
+
+        foreach (explode(',', $request->members) as $key => $member) {
+            $roles = $guild->members->get('id', $member)->roles;
+            $player = Player::all()->first(function ($player) use ($member) {
+                return $player->metadata->discord === 'discord:' . $member;
+            });
+            if (array_key_exists(1192227507508871349, $roles->toArray()) && $player) {
+                $roleExists = true;
+            } else {
+                $roleExists = false;
+                $talkTo .= "<@{$member}> ";
+            }
+            $key = $key + 1;
+
+            $exists = $roleExists && $player ? ' ' . '✅' : ' ' . '❌';
+            $text .= "Member No.{$key} -  <@{$member}> ";
+            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Doesn't Have Player In City) \n\n";
+        }
+        $embed = $this->createSummaryRequestEmbed($this->client, $interaction, $text, empty($talkTo), $talkTo);
+
+
+        return MessageBuilder::new()->addEmbed($embed);
+    }
+
 
     public function createButtons($buttons, $cb = null)
     {
@@ -44,21 +94,22 @@ use Discord\Parts\Interactions\Interaction as In;
 
     public function createSummaryRequestEmbed(
         Discord $client,
-        In $interaction,
-        $text,
-        $readyForRequest,
-        $talkTo
-    ): \Discord\Parts\Part|\Discord\Repository\AbstractRepository {
+        In      $interaction,
+                $text,
+                $readyForRequest,
+                $talkTo
+    ): \Discord\Parts\Part|\Discord\Repository\AbstractRepository
+    {
         $fields = [
             [
-                'name'  => 'Chosen Gang',
+                'name' => 'Chosen Gang',
                 'value' => GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first()->gang_name
             ],
             ['name' => 'Members', 'value' => $text],
         ];
         $channelId = Webhook::where('name', '=', 'join-to-gang')->first()->channel_id;
         !$readyForRequest && $fields[] = [
-            'name'  => 'Please Notice',
+            'name' => 'Please Notice',
             'value' => "you have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button inside <#{$channelId}>"
         ];
 
@@ -70,12 +121,12 @@ use Discord\Parts\Interactions\Interaction as In;
         $data = (object)$data;
         self::createMessage([
             'adminDiscordId' => $data->adminDiscordId,
-            'title'          => "Removed Ban",
-            'description'    => "<@{$data->adminDiscordId}> Removed Ban For <@{$data->playerDiscordId}>",
-            'webhook'        => "bans",
-            'fields'         => $data->fields,
-            'components'     => $data->components ?? [],
-            'ephemeral'      => $data->ephemeral ?? false
+            'title' => "Removed Ban",
+            'description' => "<@{$data->adminDiscordId}> Removed Ban For <@{$data->playerDiscordId}>",
+            'webhook' => "bans",
+            'fields' => $data->fields,
+            'components' => $data->components ?? [],
+            'ephemeral' => $data->ephemeral ?? false
         ]);
 
         return true;
@@ -85,15 +136,15 @@ use Discord\Parts\Interactions\Interaction as In;
     {
 
         $embed = $discord->factory(Embed::class);
-        if ( !empty($fields)) {
+        if (!empty($fields)) {
             $embed->addField(...$fields);
         }
         $embed->setTitle($title)
-              ->setAuthor('DLPanel',
-                  'https://cdn.discordapp.com/attachments/1236147966390046732/1236387837394288830/Screenshot_2024-05-04_at_21.43.40.png?ex=6637d367&is=663681e7&hm=7549a2544ea9a978a062b984f9889235a203b59b3ec8ece64840148762a05425&',
-                  'https://discord.js.org')
-              ->setThumbnail('https://cdn.discordapp.com/attachments/1236147966390046732/1236387576659841235/image.png?ex=6637d329&is=663681a9&hm=c2abe6e118a47548571b3f9110ee40f406995d087577ac07e6e7368c1736fe0d&')
-              ->setFooter('DLPanel By D.D.L')->setTimestamp();
+            ->setAuthor('DLPanel',
+                'https://cdn.discordapp.com/attachments/1236147966390046732/1236387837394288830/Screenshot_2024-05-04_at_21.43.40.png?ex=6637d367&is=663681e7&hm=7549a2544ea9a978a062b984f9889235a203b59b3ec8ece64840148762a05425&',
+                'https://discord.js.org')
+            ->setThumbnail('https://cdn.discordapp.com/attachments/1236147966390046732/1236387576659841235/image.png?ex=6637d329&is=663681a9&hm=c2abe6e118a47548571b3f9110ee40f406995d087577ac07e6e7368c1736fe0d&')
+            ->setFooter('DLPanel By D.D.L')->setTimestamp();
 
         return $embed;
     }
@@ -108,7 +159,6 @@ use Discord\Parts\Interactions\Interaction as In;
 
         return $builder;
     }
-
 
 
 }

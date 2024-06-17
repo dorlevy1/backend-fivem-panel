@@ -74,7 +74,7 @@ class JoinToGang extends DiscordMessage implements Feature
 
         $select = StringSelect::new();
         foreach (DB::connection('second_db')->table('gangs_data')->where('available', '=', true)->get() as $gang) {
-            $select->addOption(Option::new(ucfirst($gang->name), $gang->name . ' - ' . $gang->color_name))
+            $select->addOption(Option::new(ucfirst($gang->name) . ' - ' . $gang->color_name, $gang->name))
                 ->setCustomId('set_gang_name+' . $gang->name);
         }
 
@@ -98,7 +98,8 @@ class JoinToGang extends DiscordMessage implements Feature
 
     private function set_gang_name(In $interaction)
     {
-        $name = explode('+', $interaction->data->custom_id)[1];
+
+        $name = $interaction->data->values[0];
 
         $fields = [
             ['name' => 'Chosen Gang', 'value' => $name],
@@ -482,58 +483,6 @@ class JoinToGang extends DiscordMessage implements Feature
         } catch (\ErrorException $e) {
             return;
         }
-    }
-
-
-    private function messageSummaryRequest(In $interaction)
-    {
-        $request = GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first();
-        $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
-
-        $talkTo = '';
-        $text = '';
-        $rolesBoss = $guild->members->get('id', $request->boss)->roles;
-        $rolesCo = $guild->members->get('id', $request->co_boss)->roles;
-        $exists = array_key_exists(1192227507508871349, $rolesBoss->toArray()) ? ' ' . '✅' : ' ' . '❌';
-        $existsCo = array_key_exists(1192227507508871349, $rolesCo->toArray()) ? ' ' . '✅' : ' ' . '❌';
-
-        $boss = Player::all()->first(function ($player) use ($request) {
-            return $player->metadata->discord === 'discord:' . $request->boss;
-        });
-
-        $coboss = Player::all()->first(function ($player) use ($request) {
-            return $player->metadata->discord === 'discord:' . $request->boss;
-        });
-
-        $text .= "Boss -  <@{$request->boss}>";
-        $text .= $boss ? "**CID**: {$boss->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
-
-        $text .= "Co Boss -  <@{$request->co_boss}>";
-        $text .= $coboss ? "**CID**: {$coboss->citizenid} {$existsCo} \n\n" : "{$existsCo} (Also Doesn't Have Player In City) \n\n";
-
-
-        foreach (explode(',', $request->members) as $key => $member) {
-            $roles = $guild->members->get('id', $member)->roles;
-            if (array_key_exists(1192227507508871349, $roles->toArray())) {
-                $roleExists = true;
-            } else {
-                $roleExists = false;
-                $talkTo .= "<@{$member}> ";
-            }
-            $exists = $roleExists ? ' ' . '✅' : ' ' . '❌';
-            $key = $key + 1;
-
-            $player = Player::all()->first(function ($player) use ($member) {
-                return $player->metadata->discord === 'discord:' . $member;
-            });
-            $text .= "Member No.{$key} -  <@{$member}> ";
-            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
-
-        }
-        $embed = $this->createSummaryRequestEmbed($this->client, $interaction, $text, empty($talkTo), $talkTo);
-
-
-        return MessageBuilder::new()->addEmbed($embed);
     }
 
 }

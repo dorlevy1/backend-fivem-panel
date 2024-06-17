@@ -39,7 +39,7 @@ class GangMembers extends DiscordCommand implements Command
 
     }
 
-    private function addGang(In $interaction): void
+    private function addGang(In $interaction): bool
     {
         $text = "";
         $readyForRequest = true;
@@ -54,28 +54,28 @@ class GangMembers extends DiscordCommand implements Command
             $interaction->guild->channels->get('id', $request->channel_id);
             $interaction->respondWithMessage($builder->setContent("You Already Have Exists Request.\n<#{$request->channel_id}>"),
                 true);
-
-            return;
+            $interaction->acknowledge();
+            return true;
         }
 
         foreach ($interaction->data->options as $option) {
             $roles = $guild->members->get('id', $option->value)->roles;
             $roleExists = false;
-            if (array_key_exists(1192227507508871349, $roles->toArray())) {
+            $player = Player::all()->first(function ($player) use ($option) {
+                return $player->metadata->discord === 'discord:' . $option->value;
+            });
+            if (array_key_exists(1192227507508871349, $roles->toArray()) && $player) {
                 $roleExists = true;
             } else {
                 $readyForRequest = false;
                 $talkTo .= "<@$option->value> ";
             }
-            $exists = $roleExists ? ' ' . '✅' : ' ' . '❌';
+
+            $exists = $roleExists && $player ? ' ' . '✅' : ' ' . '❌';
             $ucfirst = ucfirst($option->name);
             $text .= "{$ucfirst} -  <@{$option->value}> ";
 
-
-            $player = Player::all()->first(function ($player) use ($option) {
-                return $player->metadata->discord === 'discord:' . $option->value;
-            });
-            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
+            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Doesn't Have Player In City) \n\n";
         }
 
         $boss = $interaction->data->options['boss']->value;
@@ -95,13 +95,11 @@ class GangMembers extends DiscordCommand implements Command
         $status = $readyForRequest ? '🟢' : '🟠';
 
         $pm = $guild->channels->create([
-            'name'      => " {$interaction->user->displayname} - {$name}{$status}",
-            'type'      => Channel::TYPE_GUILD_TEXT,
+            'name' => " {$interaction->user->displayname} - {$name}{$status}",
+            'type' => Channel::TYPE_GUILD_TEXT,
             'parent_id' => Webhook::where('name', '=', 'Gang Create Area')->first()->channel_id,
-            'nsfw'      => false,
+            'nsfw' => false,
         ]);
-
-
         $guild->channels->save($pm)->then(function (Channel $channel) use (
             $embed,
             $interaction,
@@ -113,13 +111,20 @@ class GangMembers extends DiscordCommand implements Command
             $readyForRequest
         ) {
             GangCreationRequest::updateOrCreate(['discord_id' => $interaction->user->id], [
-                'members'           => implode(',', $arr),
-                'co_boss'           => $co_boss,
-                'boss'              => $boss,
+                'members' => implode(',', $arr),
+                'co_boss' => $co_boss,
+                'boss' => $boss,
                 'ready_for_approve' => $readyForRequest,
-                'channel_id'        => $channel->id,
+                'channel_id' => $channel->id,
 
             ]);
+
+            $content = empty($talkTo) ? "<#$channel->id> Has Created Successfully." : "<#$channel->id> Has Created Successfully.\n**Please Notice!**\nYou have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button in <#$channel->id>";
+
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent($content),
+                true);
+
+            $interaction->acknowledge();
 
             $channel->setPermissions($interaction->guild->roles->get('name', '@everyone'),
                 [], ['view_channel'])->done(function () use ($interaction, $channel, $embed, $guild, $talkTo) {
@@ -127,17 +132,15 @@ class GangMembers extends DiscordCommand implements Command
                     [['view_channel', 'send_messages', 'attach_files', 'add_reactions'], []]
                     : [['view_channel'], ['send_messages', 'attach_files', 'add_reactions']];
 
-                $channel->setPermissions($guild->members->get('id', $interaction->user->id), ...$roles)->done(function (
-                ) use (
+                $channel->setPermissions($guild->members->get('id', $interaction->user->id), ...$roles)->done(function () use (
                     $channel,
                     $embed,
                     $interaction,
                     $talkTo
-
                 ) {
                     $builder = MessageBuilder::new()->addEmbed($embed);
 
-                    if ( !empty($talkTo)) {
+                    if (!empty($talkTo)) {
                         $action = ActionRow::new();
                         $button = Button::new(Button::STYLE_PRIMARY)->setCustomId('check_update_roles');
                         $button->setLabel('Check Updates Roles For Members');
@@ -148,13 +151,6 @@ class GangMembers extends DiscordCommand implements Command
                     $channel->sendMessage($builder)->done();
 
                     $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
-
-                    $content = empty($talkTo) ? "<#$channel->id> Has Created Successfully." : "<#$channel->id> Has Created Successfully.\n**Please Notice!**\nYou have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button in <#$channel->id>";
-
-                    $interaction->respondWithMessage(MessageBuilder::new()->setContent($content),
-                        true)->done();
-                    $interaction->acknowledge();
-
                     if (empty($talkTo)) {
                         $action = ActionRow::new();
                         $button1 = Button::new(Button::STYLE_DANGER)->setCustomId('decline_gang+' . $interaction->user->id);
@@ -169,9 +165,8 @@ class GangMembers extends DiscordCommand implements Command
                     empty($talkTo) && $guild->channels->get('name', 'dlp-gang-requests')->sendMessage($builder);
                 });
             });
-
-        })->done();
-
+        });
+        return true;
     }
 
     public function addOptions(): void

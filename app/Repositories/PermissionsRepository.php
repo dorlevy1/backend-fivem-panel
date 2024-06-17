@@ -45,15 +45,20 @@ class PermissionsRepository
         return [$permissions, $pending, $permissions_type, $permissions_action];
     }
 
-    public function get(): object
+
+    private function objects(): array
     {
-        return response()->json([
+       return [
             'permissions' => $this->all()[0],
             'pending' => $this->all()[1],
             'permissions_type' => $this->all()[2],
             'permissions_action' => $this->all()[3],
             'permissions_settings' => Settings::category('permissions')->get()
-        ]);
+        ];
+    }
+    public function get(): object
+    {
+        return response()->json($this->objects());
     }
 
     public function addPlayer($data)
@@ -103,24 +108,21 @@ class PermissionsRepository
             'permission_type' => $data->permission_type
         ]);
 //
-//        $this->notify->setData([
-//            'permissions' => $this->all()[0],
-//            'pending' => $this->all()[1]
-//        ]);
-//        $this->notify->send($this->notify);
+        $this->notify->setData($this->objects());
+        $this->notify->send($this->notify);
 
         $user = auth()->user();
         $discord = str_replace('discord:', '', $data->player['discord']);
-        $user->notify(new FirstTimeNotification(str_replace('discord:', '', $data->player['discord'])));
-        $user->notify(new WebhookNotification([
-            'admin_discord' => $discord,
-            'id' => $discord,
-            'webhook' => "private",
-            'message' => Message::createDraft(['title' => 'Invitation For DLPanel',
-                'description' => "<@{$discord}> got an invitation!",
-                'fields' => [],
-                'components' => []])
-        ]));
+        $user->notify(new FirstTimeNotification($discord));
+//        $user->notify(new WebhookNotification([
+//            'admin_discord' => $discord,
+//            'id' => $discord,
+//            'webhook' => "private",
+//            'message' => Message::createDraft(['title' => 'Invitation For DLPanel',
+//                'description' => "<@{$discord}> got an invitation!",
+//                'fields' => [],
+//                'components' => []])
+//        ]));
 
         return response()->json([
             'user' => $permissions,
@@ -129,19 +131,26 @@ class PermissionsRepository
     }
 
 
-    public function update($data): Permission
+    public function update($data)
     {
         $role = $data[0];
         $user = $data[1];
-        $permission = Permission::find($user['id']);
+        $permission = Permission::find($user['permissions']['id']);
         $permission->permission_type = $role['id'];
         $permission->save();
+
+        $this->notify->setData($this->objects());
+        $this->notify->send($this->notify);
         return $permission;
     }
 
     public function delete($id)
     {
         $delete = Permission::find($id)->delete();
+
+        $this->notify->setData($this->objects());
+        $this->notify->send($this->notify);
+
 
         return response()->json([
             'message' => 'User Id: ' . $id . ' Deleted From Permissions.'
@@ -152,6 +161,9 @@ class PermissionsRepository
     public function pending_delete($id)
     {
         $delete = PendingPermission::find($id)->delete();
+
+        $this->notify->setData($this->objects());
+        $this->notify->send($this->notify);
 
         return response()->json([
             'message' => 'User Id: ' . $id . ' Deleted From Permissions.'
