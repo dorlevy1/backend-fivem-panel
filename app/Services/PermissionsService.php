@@ -25,4 +25,20 @@ class PermissionsService
     {
         return $this->permissionsRepository->addPlayer($data);
     }
+
+
+    public function update($data)
+    {
+        return $this->permissionsRepository->update($data);
+    }
+
+    public function delete($data)
+    {
+        return $this->permissionsRepository->delete($data);
+    }
+
+    public function pending_delete($id)
+    {
+        return $this->permissionsRepository->pending_delete($id);
+    }
 }

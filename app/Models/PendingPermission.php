@@ -12,12 +12,7 @@ class PendingPermission extends Model
     use HasFactory;
 
     protected $table = 'pending_permissions';
-    protected $fillable = [
-        'discord_id',
-        'scopes',
-        'created_at',
-        'updated_at'
-    ];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'permissions' => 'array',

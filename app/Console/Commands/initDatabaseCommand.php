@@ -70,6 +70,18 @@ class initDatabaseCommand extends Command
                     [
                         'label' => 'Gang Requests',
                         'value' => ''
+                    ],
+                    [
+                        'label' => 'Discord Bot',
+                        'value' => ''
+                    ],
+                    [
+                        'label' => 'Settings',
+                        'value' => ''
+                    ],
+                    [
+                        'label' => 'Permissions',
+                        'value' => ''
                     ]
                 ]
             ],

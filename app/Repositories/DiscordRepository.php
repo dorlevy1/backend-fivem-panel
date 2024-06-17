@@ -3,6 +3,7 @@
 
 namespace App\Repositories;
 
+use App\Message;
 use App\Models\Admin;
 use App\Models\PendingPermission;
 use App\Models\Permission;
@@ -34,7 +35,7 @@ class DiscordRepository
             ];
         }
 
-        $admin = Admin::firstOrCreate(
+        $admin = Admin::updateOrCreate(
             [
                 'discord_id' => strval($userData->id),
             ],
@@ -44,30 +45,29 @@ class DiscordRepository
                 'global_name' => $userData->global_name,
                 'remember_token' => $token
             ]);
-        $admin->update(['remember_token' => $token]);
 
         if ($pending_permissions && !$permissions) {
-            Permission::create([
+            $permission = Permission::create([
                 'discord_id' => $pending_permissions->discord_id,
                 'permission_type' => $pending_permissions->permission_type
             ]);
 
-            $token = $this->attempt($pending_permissions->discord_id);
+            $token = $this->attempt($permission->discord_id);
 
             if ($token) {
                 $user = auth()->user();
-                $user->notify(new GrantedAccessNotification($userData->id));
                 $user->notify(new WebhookNotification([
                     'admin_discord' => $userData->id,
-                    'title' => 'Granted Access For The First Time In DLPanel',
-                    'description' => "<@{$userData->id}> Granted Access Successfully!",
-                    'webhook' => "permissions",
-                    'fields' => [],
-                    'components' => [],
+                    'id' => $userData->id,
+                    'webhook' => "private",
+                    'message' => Message::createDraft(['title' => 'Granted Access For The First Time In DLPanel',
+                        'description' => "<@{$userData->id}> Granted Access Successfully!",
+                        'fields' => [],
+                        'components' => []])
                 ]));
 
             }
-            $pending_permissions->delete();
+            PendingPermission::where('discord_id', '=', strval($userData->id))->delete();
         }
 
         return (object)['admin' => $admin];

@@ -33,9 +33,16 @@ class PermissionsController extends Controller
 
     public function update(Request $request)
     {
+        return $this->permissionsService->update($request);
     }
 
-    public function delete(Request $request)
+    public function delete($id)
     {
+        return $this->permissionsService->delete($id);
+    }
+
+    public function pending_delete($id)
+    {
+        return $this->permissionsService->pending_delete($id);
     }
 }

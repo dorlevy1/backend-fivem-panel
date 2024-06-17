@@ -14,9 +14,7 @@ class Permission extends Model
 
     protected $table = 'admin_permissions';
 
-    protected $guarded = [
-        'id'
-    ];
+    protected $guarded = ['id'];
     protected $casts = [
         'permissions' => 'array',
     ];

@@ -40,8 +40,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::prefix('permissions')->group(function () {
         Route::post('/get', [PermissionsController::class, 'get']);
         Route::post('/add', [PermissionsController::class, 'addPlayer']);
-        Route::post('/update', [PermissionsController::class, 'update']);
-        Route::delete('/delete', [PermissionsController::class, 'delete']);
+        Route::patch('/update', [PermissionsController::class, 'update']);
+        Route::delete('/delete/{id}', [PermissionsController::class, 'delete']);
+        Route::delete('pending/delete/{id}', [PermissionsController::class, 'pending_delete']);
     });
 
     Route::prefix('gangs')->group(function () {
@@ -91,6 +92,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::prefix('gang-requests')->group(function () {
         Route::post('/all', [GangRequestsController::class, 'all']);
     });
+
     Route::prefix('redeem-requests')->group(function () {
         Route::post('/all', [RedeemCodeRequestController::class, 'all']);
     });

@@ -4,6 +4,7 @@
 namespace App\Repositories;
 
 use App\Events\DatabaseChange;
+use App\Message;
 use App\Models\ActionPermission;
 use App\Models\Admin;
 use App\Models\PendingPermission;
@@ -33,7 +34,7 @@ class PermissionsRepository
     {
         $permissions = [];
         foreach ($this->permissions->all() as $permission) {
-            $user = Admin::where('discord_id', '=', $permission->discord_id)->first();
+            $user = Admin::with('permissions')->where('discord_id', '=', $permission->discord_id)->first();
             $permissions[] = $user;
         }
         $pending = DB::table('pending_permissions')->get();
@@ -59,21 +60,15 @@ class PermissionsRepository
     {
 
         $exists = Admin::where('discord_id', '=',
-            str_replace('discord:', '', $data->player['metadata']['discord']))->first();
+            str_replace('discord:', '', $data->player['discord']))->first();
 
         if ($exists) {
             $pendingExists = PendingPermission::where('discord_id', '=',
-                str_replace('discord:', '', $data->player['metadata']['discord']))->first();
+                str_replace('discord:', '', $data->player['discord']))->first();
             $permissionExists = Permission::where('discord_id', '=',
-                str_replace('discord:', '', $data->player['metadata']['discord']))->first();
+                str_replace('discord:', '', $data->player['discord']))->first();
 
             if ($permissionExists) {
-
-                $this->notify->setData([
-                    'permissions' => $this->all()[0],
-                    'pending' => $this->all()[1]
-                ]);
-                $this->notify->send($this->notify);
 
                 return response()->json([
                     'user' => $permissionExists,
@@ -81,20 +76,14 @@ class PermissionsRepository
                 ]);
 
             }
-            if ($pendingExists && !$permissionExists || $pendingExists && $permissionExists) {
-                Permission::firstOrCreate([
-                    'discord_id' => str_replace('discord:', '', $data->player['metadata']['discord']),
-                    'scopes' => 'staff'
+            if ($pendingExists) {
+                return response()->json([
+                    'user' => $pendingExists,
+                    'message' => 'Admin already have pending permissions.'
                 ]);
-                $pendingExists->delete();
-                #TODO
-                //RETURN STATUS CODE JSON
             }
 
-            if (!$pendingExists && !$permissionExists) {
-
-                return $this->pendingCreate($data);
-            }
+            return $this->pendingCreate($data);
         }
 
         return $this->pendingCreate($data);
@@ -110,31 +99,62 @@ class PermissionsRepository
     {
 
         $permissions = PendingPermission::firstOrCreate([
-            'discord_id' => str_replace('discord:', '', $data->player['metadata']['discord']),
-            'scopes' => 'staff'
+            'discord_id' => str_replace('discord:', '', $data->player['discord']),
+            'permission_type' => $data->permission_type
         ]);
-
-        $this->notify->setData([
-            'permissions' => $this->all()[0],
-            'pending' => $this->all()[1]
-        ]);
-        $this->notify->send($this->notify);
+//
+//        $this->notify->setData([
+//            'permissions' => $this->all()[0],
+//            'pending' => $this->all()[1]
+//        ]);
+//        $this->notify->send($this->notify);
 
         $user = auth()->user();
-        $discord = str_replace('discord:', '', $data->player['metadata']['discord']);
-        $user->notify(new FirstTimeNotification(str_replace('discord:', '', $data->player['metadata']['discord'])));
+        $discord = str_replace('discord:', '', $data->player['discord']);
+        $user->notify(new FirstTimeNotification(str_replace('discord:', '', $data->player['discord'])));
         $user->notify(new WebhookNotification([
             'admin_discord' => $discord,
-            'title' => 'Invitation For DLPanel',
-            'description' => "<@{$discord}> got an invitation!",
-            'webhook' => "permissions",
-            'fields' => [],
-            'components' => [],
+            'id' => $discord,
+            'webhook' => "private",
+            'message' => Message::createDraft(['title' => 'Invitation For DLPanel',
+                'description' => "<@{$discord}> got an invitation!",
+                'fields' => [],
+                'components' => []])
         ]));
 
         return response()->json([
             'user' => $permissions,
             'message' => 'Admin Added to Pending Permissions'
+        ]);
+    }
+
+
+    public function update($data): Permission
+    {
+        $role = $data[0];
+        $user = $data[1];
+        $permission = Permission::find($user['id']);
+        $permission->permission_type = $role['id'];
+        $permission->save();
+        return $permission;
+    }
+
+    public function delete($id)
+    {
+        $delete = Permission::find($id)->delete();
+
+        return response()->json([
+            'message' => 'User Id: ' . $id . ' Deleted From Permissions.'
+        ]);
+
+    }
+
+    public function pending_delete($id)
+    {
+        $delete = PendingPermission::find($id)->delete();
+
+        return response()->json([
+            'message' => 'User Id: ' . $id . ' Deleted From Permissions.'
         ]);
     }
 }

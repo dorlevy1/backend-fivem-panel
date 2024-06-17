@@ -41,9 +41,9 @@ class AuthController extends Controller
                     'message' => 'Unauthorized',
                 ], 401);
             }
-            $permissions = explode(',', json_decode(auth()->user()->permissions)->scopes);
+            $permission = explode(',', json_decode(auth()->user()->permissions)->permission_type);
 
-            if (in_array('staff', $permissions) || in_array('*', $permissions)) {
+            if ($permission) {
                 return response()->json([
                     'success' => true,
                 ]);
@@ -59,10 +59,10 @@ class AuthController extends Controller
     {
 
         return response()->json([
-            'user'          => Auth::user(),
+            'user' => Auth::user(),
             'authorisation' => [
                 'token' => Auth::refresh(),
-                'type'  => 'bearer',
+                'type' => 'bearer',
             ]
         ]);
     }

@@ -68,7 +68,7 @@ class JoinToGang extends DiscordMessage implements Feature
         $instructions = DiscordBot::category('Gang Area')->where('label', '=', 'Instructions')->first()->value;
 
         $fields = [];
-        foreach (json_decode($instructions) as $instruction) {
+        foreach ($instructions as $instruction) {
             $fields[] = ['name' => $instruction->name, 'value' => $instruction->value];
         }
 
@@ -117,7 +117,7 @@ class JoinToGang extends DiscordMessage implements Feature
         $instructions = DiscordBot::category('Gang Area')->where('label', '=', 'Member Instructions')->first()->value;
 
         $actionToTake = [];
-        foreach (json_decode($instructions) as $instruction) {
+        foreach ($instructions as $instruction) {
             $actionToTake[] = ['name' => $instruction->name, 'value' => $instruction->value];
         }
 
