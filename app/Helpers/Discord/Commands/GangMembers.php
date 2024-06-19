@@ -62,7 +62,7 @@ class GangMembers extends DiscordCommand implements Command
             $roles = $guild->members->get('id', $option->value)->roles;
             $roleExists = false;
             $player = Player::all()->first(function ($player) use ($option) {
-                return $player->metadata->discord === 'discord:' . $option->value;
+                return $player->discord === 'discord:' . $option->value;
             });
             if (array_key_exists(1192227507508871349, $roles->toArray()) && $player) {
                 $roleExists = true;
@@ -142,7 +142,7 @@ class GangMembers extends DiscordCommand implements Command
 
                     if (!empty($talkTo)) {
                         $action = ActionRow::new();
-                        $button = Button::new(Button::STYLE_PRIMARY)->setCustomId('check_update_roles');
+                        $button = Button::new(Button::STYLE_PRIMARY)->setCustomId('check_update_roles+' . $interaction->user->id);
                         $button->setLabel('Check Updates Roles For Members');
                         $action->addComponent($button);
                         $builder->addComponent($action);

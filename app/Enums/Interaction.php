@@ -15,6 +15,7 @@ enum Interaction: string
     case APPROVE_GANG = 'approve_gang';
     case DECLINE_GANG = 'decline_gang';
     case SET_GANG_NAME = 'set_gang_name';
+    case DELETE_CHANNEL = 'delete_channel';
     case REDEEM_CODE = 'create_redeem_code';
     case REDEEM_INSERT_VEHICLES = 'redeem_insert_vehicles';
     case REDEEM_INSERT_CASH = 'redeem_insert_cash';

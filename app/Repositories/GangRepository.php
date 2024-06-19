@@ -4,6 +4,7 @@
 namespace App\Repositories;
 
 use App\Models\Gang;
+use App\Models\GangCreationRequest;
 use App\Models\Player;
 use App\Models\RedeemCode;
 use App\Models\RedeemCodeRequestHistory;
@@ -38,7 +39,7 @@ class GangRepository
         foreach ($this->gangs->all() as $gang) {
 
             $owner = Player::where('citizenid', '=', $gang->owner)->first();
-            if ( !$owner) {
+            if (!$owner) {
                 continue;
             }
             $gang->owner = $owner->charinfo->firstname . ' ' . $owner->charinfo->lastname . ' | ' . $gang->owner;
@@ -55,7 +56,7 @@ class GangRepository
 
     public function requests()
     {
-        return ['active' => RedeemCode::with('request')->get(), 'history' => RedeemCodeRequestHistory::all()];
+        return ['active' => GangCreationRequest::all(), 'ready_for_approve' => GangCreationRequest::readyForApprove()->get()];
     }
 
 

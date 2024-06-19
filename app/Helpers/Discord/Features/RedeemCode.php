@@ -488,13 +488,14 @@ class RedeemCode extends DiscordMessage implements Feature
                 'code' => $redeem->code,
                 'discord_id' => $request->discord_id,
                 'citizenid' => $request->citizenid
-            ], [
-            'request_by' => $request->request_by,
-            'weapons' => $request->weapons,
-            'vehicles' => $request->vehicles,
-            'items' => $request->items,
-            'cash' => $request->cash,
-        ]);
+            ],
+            [
+                'request_by' => $request->request_by,
+                'weapons' => $request->weapons,
+                'vehicles' => $request->vehicles,
+                'items' => $request->items,
+                'cash' => $request->cash,
+            ]);
 
         $embed = $this->createSummaryRequest($request);
         $in->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true)->done();

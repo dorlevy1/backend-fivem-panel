@@ -13,15 +13,6 @@ class RedeemCodeRequestHistory extends Model
     protected $table = 'redeem_codes_history';
     protected $connection = 'second_db';
 
-    protected $fillable = [
-        'citizenid',
-        'request_by',
-        'weapons',
-        'vehicles',
-        'items',
-        'cash',
-        'discord_id',
-        'channel_id'
-    ];
+    protected $guarded = ['id'];
 
 }

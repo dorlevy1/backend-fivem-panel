@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class GangCreationRequest extends Model
 {
@@ -14,5 +15,11 @@ class GangCreationRequest extends Model
     protected $table = 'gang_creation_request';
 
 
-    protected $fillable = ['discord_id', 'gang_name', 'boss', 'co_boss', 'members', 'ready_for_approve', 'channel_id'];
+    protected $guarded = ['id'];
+
+
+    public function scopeReadyForApprove(Builder $query)
+    {
+        return $query->where('ready_for_approve', '=', 1);
+    }
 }

@@ -25,11 +25,14 @@ use Discord\Parts\Interactions\Interaction as In;
     }
 
 
-    protected function messageSummaryRequest(In $interaction)
+    protected function messageSummaryRequest(In $interaction, $discord = null)
     {
-        $request = GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first();
+        $request = GangCreationRequest::where('discord_id', '=', $discord ?? $interaction->user->id)->first();
         $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
 
+        if (!isset($request->boss) || !isset($request->co_boss)) {
+            return false;
+        }
         $talkTo = '';
         $text = '';
         $rolesBoss = $guild->members->get('id', $request->boss)->roles;
@@ -69,7 +72,7 @@ use Discord\Parts\Interactions\Interaction as In;
             $text .= "Member No.{$key} -  <@{$member}> ";
             $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Doesn't Have Player In City) \n\n";
         }
-        $embed = $this->createSummaryRequestEmbed($this->client, $interaction, $text, empty($talkTo), $talkTo);
+        $embed = $this->createSummaryRequestEmbed($this->client, $interaction, $text, empty($talkTo), $talkTo, $discord);
 
 
         return MessageBuilder::new()->addEmbed($embed);
@@ -97,20 +100,20 @@ use Discord\Parts\Interactions\Interaction as In;
         In      $interaction,
                 $text,
                 $readyForRequest,
-                $talkTo
+                $talkTo,
+                $discord = null
     ): \Discord\Parts\Part|\Discord\Repository\AbstractRepository
     {
         $fields = [
             [
                 'name' => 'Chosen Gang',
-                'value' => GangCreationRequest::where('discord_id', '=', $interaction->user->id)->first()->gang_name
+                'value' => GangCreationRequest::where('discord_id', '=', $discord ?? $interaction->user->id)->first()->gang_name
             ],
             ['name' => 'Members', 'value' => $text],
         ];
-        $channelId = Webhook::where('name', '=', 'join-to-gang')->first()->channel_id;
         !$readyForRequest && $fields[] = [
             'name' => 'Please Notice',
-            'value' => "you have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button inside <#{$channelId}>"
+            'value' => "you have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button"
         ];
 
         return $this->embed($client, $fields, 'Gang Request');
