@@ -48,7 +48,7 @@ class PermissionsRepository
 
     private function objects(): array
     {
-       return [
+        return [
             'permissions' => $this->all()[0],
             'pending' => $this->all()[1],
             'permissions_type' => $this->all()[2],
@@ -56,6 +56,7 @@ class PermissionsRepository
             'permissions_settings' => Settings::category('permissions')->get()
         ];
     }
+
     public function get(): object
     {
         return response()->json($this->objects());
@@ -64,31 +65,25 @@ class PermissionsRepository
     public function addPlayer($data)
     {
 
-        $exists = Admin::where('discord_id', '=',
+        $admin = Admin::where('discord_id', '=',
             str_replace('discord:', '', $data->player['discord']))->first();
 
-        if ($exists) {
-            $pendingExists = PendingPermission::where('discord_id', '=',
-                str_replace('discord:', '', $data->player['discord']))->first();
-            $permissionExists = Permission::where('discord_id', '=',
-                str_replace('discord:', '', $data->player['discord']))->first();
-
-            if ($permissionExists) {
-
-                return response()->json([
-                    'user' => $permissionExists,
-                    'message' => 'Admin already have permissions.'
-                ]);
-
-            }
-            if ($pendingExists) {
-                return response()->json([
-                    'user' => $pendingExists,
-                    'message' => 'Admin already have pending permissions.'
-                ]);
-            }
-
+        if (!$admin) {
             return $this->pendingCreate($data);
+        }
+
+        if ($admin->pending) {
+            return response()->json([
+                'user' => $admin->pending,
+                'message' => 'Admin already have pending permissions.'
+            ]);
+
+        }
+        if ($admin->permissions) {
+            return response()->json([
+                'user' => $admin->permissions,
+                'message' => 'Admin already have permissions.'
+            ]);
         }
 
         return $this->pendingCreate($data);

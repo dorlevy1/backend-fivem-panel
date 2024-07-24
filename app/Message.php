@@ -2,15 +2,13 @@
 
 namespace App;
 
+use AllowDynamicProperties;
 use App\Helpers\API;
-use App\Helpers\Discord\Discord;
 use App\Models\Webhook;
 use App\Notifications\WebhookNotification;
-use Discord\Builders\CommandBuilder;
-use Discord\Parts\Interactions\Command\Option;
-use Discord\Parts\Interactions\Interaction as In;
 
-abstract class Message
+
+#[AllowDynamicProperties] abstract class Message
 {
 
     public function __construct()

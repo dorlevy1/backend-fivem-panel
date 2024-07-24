@@ -25,6 +25,11 @@ class AccessToken
         return $this->access_token;
     }
 
+    public function getAccessToken()
+    {
+        return $this->access_token;
+    }
+
     public function setToken($access_token): void
     {
         $this->access_token = $access_token;

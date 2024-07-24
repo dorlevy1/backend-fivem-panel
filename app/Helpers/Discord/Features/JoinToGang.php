@@ -3,15 +3,15 @@
 namespace App\Helpers\Discord\Features;
 
 use App\Enums\Interaction as InteractionEnum;
-use App\Feature;
 use App\Helpers\API;
+use App\Helpers\Discord\ButtonFactory;
 use App\Helpers\Discord\DiscordMessage;
-use App\Models\Criminal;
 use App\Models\DiscordBot;
 use App\Models\Gang;
 use App\Models\GangCreationRequest;
 use App\Models\Player;
 use App\Models\Webhook;
+use App\Services\DiscordService;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\Components\Option;
@@ -19,36 +19,39 @@ use Discord\Builders\Components\StringSelect;
 use Discord\Builders\Components\TextInput;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord as DiscordPHP;
+use Discord\Exceptions\InvalidOverwriteException;
 use Discord\Helpers\Collection;
 use Discord\Parts\Channel\Channel;
+use Discord\Parts\Channel\Invite;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Interaction as In;
 use Illuminate\Support\Facades\DB;
 
 
-class JoinToGang extends DiscordMessage implements Feature
+class JoinToGang extends DiscordMessage
 {
 
     public API $api;
-    public DiscordMessage $message;
     public DiscordPHP $discord;
     public DiscordPHP $client;
+    protected DiscordService $discordService;
 
-    public function __construct(DiscordPHP $discord, DiscordPHP $client)
+    public function __construct(API $api, DiscordPHP $discord, DiscordService $discordService)
     {
         parent::__construct($discord);
-        $this->api = new API();
+        $this->api = $api;
         $this->discord = $discord;
-        $this->client = $client;
-        $this->message = new DiscordMessage($client);
+        $this->service = $discordService;
         $this->handle();
+
+
     }
 
 
     /**
      * @throws \Exception
      */
-    public function interaction($interaction)
+    public function interaction($interaction): bool
     {
         $name = explode('+', $interaction->data->custom_id)[0];
 
@@ -74,7 +77,10 @@ class JoinToGang extends DiscordMessage implements Feature
         }
 
         $select = StringSelect::new();
-        foreach (DB::connection('second_db')->table('gangs_data')->where('available', '=', true)->get() as $gang) {
+
+        $gangsData = DB::connection('second_db')->table('gangs_data')->where('available', '=', true)->get();
+
+        foreach (array_slice($gangsData->toArray(), 0, 24) as $gang) {
             $select->addOption(Option::new(ucfirst($gang->name) . ' - ' . $gang->color_name, $gang->name))
                 ->setCustomId('set_gang_name+' . $gang->name);
         }
@@ -95,7 +101,7 @@ class JoinToGang extends DiscordMessage implements Feature
             return false;
         }
 
-        $embed = $this->embed($this->client, $fields, 'Choose Gang');
+        $embed = $this->embed($fields, 'Choose Gang');
 
         $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed)->addComponent($select), true);
         $interaction->acknowledge();
@@ -103,6 +109,9 @@ class JoinToGang extends DiscordMessage implements Feature
     }
 
 
+    /**
+     * @throws \Exception
+     */
     private function delete_channel(In $interaction): bool
     {
         $discord = explode('+', $interaction->data->custom_id)[1];
@@ -112,10 +121,11 @@ class JoinToGang extends DiscordMessage implements Feature
             $interaction->acknowledge();
             return false;
         }
-        $interaction->channel->deleteChannel();
-        $interaction->acknowledge();
-        return true;
 
+        $interaction->guild->channels->delete($interaction->channel_id)->then(function (Channel $channel) use ($interaction) {
+            $interaction->acknowledge();
+        });
+        return true;
     }
 
     private function set_gang_name(In $interaction)
@@ -144,8 +154,8 @@ class JoinToGang extends DiscordMessage implements Feature
             $actionToTake[] = ['name' => $instruction->name, 'value' => $instruction->value];
         }
 
-        $embed = $this->embed($this->client, $fields, 'Request Begin ');
-        $embed2 = $this->embed($this->client, $actionToTake, 'Add Your Gang Members!');
+        $embed = $this->embed($fields, 'Request Begin ');
+        $embed2 = $this->embed($actionToTake, 'Add Your Gang Members!');
         $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed), true);
         $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed2), true);
         $interaction->acknowledge();
@@ -157,16 +167,20 @@ class JoinToGang extends DiscordMessage implements Feature
      */
     private function check_update_roles(In $interaction): bool
     {
+
+
         $discord_id = explode('+', $interaction->data->custom_id)[1];
 
-
         $builder = $this->messageSummaryRequest($interaction, $discord_id);
+
         if (!$builder) {
             $interaction->respondWithMessage(MessageBuilder::new()->setContent("U Did not added your Boss Or Co Boss"));
             $interaction->acknowledge();
             return false;
         }
+
         $request = GangCreationRequest::where('discord_id', '=', $discord_id)->first();
+
         $talkTo = false;
 
 
@@ -180,13 +194,11 @@ class JoinToGang extends DiscordMessage implements Feature
             }
         }
 
-        $action = ActionRow::new();
 
         if ($talkTo) {
-            $button = Button::new(Button::STYLE_PRIMARY)->setCustomId('check_update_roles+' . $discord_id);
-            $button->setLabel('Check Updates Roles For Members');
-            $action->addComponent($button);
-            $builder->addComponent($action);
+            $action = ButtonFactory::create(ActionRow::new());
+            $ar = $action->button('Check Updates Roles For Members', Button::STYLE_PRIMARY, 'check_update_roles+' . $discord_id);
+            $builder->addComponent($ar->get('action'));
         }
 
         $name = $request->gang_name;
@@ -208,13 +220,10 @@ class JoinToGang extends DiscordMessage implements Feature
 //        $interaction->message->delete();
 //        $interaction->channel->sendMessage($builder)->done();
         if (!$talkTo) {
-            $button1 = Button::new(Button::STYLE_DANGER)->setCustomId('decline_gang+' . $discord_id);
-            $button1->setLabel('Decline');
-            $button2 = Button::new(Button::STYLE_SUCCESS)->setCustomId('approve_gang+' . $discord_id);
-            $button2->setLabel('Approve');
-            $action->addComponent($button1);
-            $action->addComponent($button2);
-            $builder->addComponent($action);
+            $action = ButtonFactory::create(ActionRow::new());
+            $ar = $action->button('Decline', Button::STYLE_DANGER, 'decline_gang+' . $discord_id)
+                ->button('Approve', Button::STYLE_SUCCESS, 'approve_gang+' . $discord_id);
+            $builder->addComponent($ar->get());
         }
 
         $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_LOGS'));
@@ -245,6 +254,26 @@ class JoinToGang extends DiscordMessage implements Feature
     /**
      * @throws \Exception
      */
+
+
+    private function updatePlayer(Player $player, object $gangData, bool $isboss = false, int $level = 1, $gradeName = 'Warrior'): void
+    {
+        $player->criminal()->update(['organization' => $gangData?->name]);
+        $player->gang->label = $gangData?->name;
+        $player->gang->name = strtolower($gangData?->name);
+        $player->gang->isboss = $isboss;
+        $player->gang->grade->name = $gradeName;
+        $player->gang->grade->level = $level;
+
+        $player->save();
+
+
+    }
+
+    /**
+     * @throws InvalidOverwriteException
+     * @throws \Exception
+     */
     private function approve_gang(In $interaction): bool
     {
 
@@ -259,9 +288,23 @@ class JoinToGang extends DiscordMessage implements Feature
             $gangMembers[] = $gangRequest->boss;
             $gangMembers[] = $gangRequest->co_boss;
 
-            foreach (Player::all() as $player) {
-                foreach ($gangMembers as $member) {
-                    if ($player->metadata->discord === 'discord:' . $gangRequest->boss) {
+            $gangs = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD_GANGS'));
+            $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
+            $ch = $guild->channels->get('id', $gangRequest->channel_id);
+
+            foreach ($gangMembers as $member) {
+                $player = Player::where('discord', '=', 'discord:' . $member)->first();
+                if (!is_null($player)) {
+
+                    if ($player->discord !== 'discord:' . $gangRequest->coboss && $player->discord !== 'discord:' . $gangRequest->boss) {
+                        $this->updatePlayer($player, $gangData);
+                    }
+
+                    if ($player->discord === 'discord:' . $gangRequest->coboss) {
+                        $this->updatePlayer($player, $gangData, false, 2, 'Co Boss');
+                    }
+
+                    if ($player->discord === 'discord:' . $gangRequest->boss) {
                         Gang::updateOrCreate(['name' => $gangData->name], [
                             'name' => $gangData->name,
                             'owner' => $player->citizenid,
@@ -269,24 +312,22 @@ class JoinToGang extends DiscordMessage implements Feature
                             'picture' => '',
                             'color' => "#{$gangData->color_hex}",
                         ]);
+                        $this->updatePlayer($player, $gangData, true, 3, 'Boss');
                     }
-                    if ($player->metadata->discord === 'discord:' . $member) {
-                        Criminal::where('identifier', '=',
-                            $player->citizenid)->update(['organization' => $gangData->name]);
-                    }
+
                 }
             }
 
-
-            $guild = $this->discord->guilds->get('id', $_ENV['DISCORD_BOT_GUILD']);
-
-            $ch = $guild->channels->get('id', $gangRequest->channel_id);
+            $gangs->createInvite(...['max_uses' => 15])->done(function (Invite $invite) use ($guild, $member, $ch) {
+                $ch->sendMessage(MessageBuilder::new()->setContent('https://discord.gg/' . $invite->code))->done();
+            });
 
             $fields = [
                 ['name' => 'Approved By', 'value' => "<@{$interaction->user->id}>"]
             ];
 
-            $embed = $this->embed($this->client, $fields, 'Action Approved');
+
+            $embed = $this->embed($fields, 'Action Approved');
             $member = $guild->members->get('id', $gangRequest->discord_id);
             $ch->name = $member->user->displayname . '-!Approved!🟢';
             $ch->setPermissions($guild->members->get('id', $interaction->user->id),
@@ -322,7 +363,7 @@ class JoinToGang extends DiscordMessage implements Feature
 
                     $ch = $guild->channels->get('id', $gangRequest->channel_id);
 
-                    $embed = $this->embed($this->client, $fields, 'Action Decline');
+                    $embed = $this->embed($fields, 'Action Decline');
                     $member = $guild->members->get('id', $gangRequest->discord_id);
                     $ch->name = $member->user->displayname . '-!Decline!🔴';
                     $ch->setPermissions($guild->members->get('id', $interaction->user->id),
@@ -358,15 +399,15 @@ class JoinToGang extends DiscordMessage implements Feature
             $interaction->acknowledge();
             return false;
         }
-        $ar = ActionRow::new();
-        $submit = Button::new(Button::STYLE_PRIMARY, 'delete_channel+' . $gangRequest->discord_id)->setLabel('Delete Channel');
-        $ar->addComponent($submit);
         $builder->addEmbed($embed);
 
-        $ch->sendMessage(MessageBuilder::new()->addEmbed($embed)->addComponent($ar));
         $interaction->updateMessage($builder);
-//        $interaction->message->delete();
         $interaction->acknowledge();
+
+
+        $action = ButtonFactory::create(ActionRow::new());
+        $ar = $action->button('Delete Channel', Button::STYLE_DANGER, 'delete_channel+' . $gangRequest->discord_id);
+        $ch->sendMessage(MessageBuilder::new()->addEmbed($embed)->addComponent($ar->get('action')));
 
         return true;
     }
@@ -382,14 +423,12 @@ class JoinToGang extends DiscordMessage implements Feature
                 return false;
             }
 
-            $embed = $this->message->embed($this->client, [], 'Gang Creation Area');
+            $embed = $this->embed([], 'Gang Creation Area');
             $builder = MessageBuilder::new();
-            $ar = ActionRow::new();
-            $submit = Button::new(Button::STYLE_PRIMARY,
-                'gang_request')->setLabel('Click To Apply Gang Request.');
-            $ar->addComponent($submit);
+            $action = ButtonFactory::create(ActionRow::new());
+            $ar = $action->button('Click To Apply Gang Request.', Button::STYLE_PRIMARY, 'gang_request');
             $builder->addEmbed($embed);
-            $builder->addComponent($ar);
+            $builder->addComponent($ar->get('action'));
             $guildMain->channels->get('name', 'join-to-gang')->sendMessage($builder);
 
             return true;
@@ -439,16 +478,20 @@ class JoinToGang extends DiscordMessage implements Feature
 
     public function handle(): void
     {
+
         $this->createCat();
+
         $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
         $this->createMainChannel($guild);
         $this->createButtonChannel($guild);
+
         $this->createLogPage($guild);
     }
 
     public function createCat(): Guild|string
     {
         try {
+
             $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
             if (!is_null($guild->channels->get('name', 'Gang Create Area'))) {
 

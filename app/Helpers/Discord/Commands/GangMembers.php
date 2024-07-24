@@ -88,7 +88,7 @@ class GangMembers extends DiscordCommand implements Command
             $arr[] = $option->value;
         }
 
-        $embed = $this->createSummaryRequestEmbed($this->s, $interaction, $text, $readyForRequest, $talkTo);
+        $embed = $this->createSummaryRequestEmbed($interaction, $text, $readyForRequest, $talkTo);
 
         $name = GangCreationRequest::where('discord_id', '=',
             $interaction->user->id)->first()->gang_name;

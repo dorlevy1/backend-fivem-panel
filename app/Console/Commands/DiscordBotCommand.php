@@ -2,11 +2,12 @@
 
 namespace App\Console\Commands;
 
+use AllowDynamicProperties;
 use App\Helpers\API;
 use App\Helpers\Discord\Discord;
 use Illuminate\Console\Command;
 
-class DiscordBotCommand extends Command
+#[AllowDynamicProperties] class DiscordBotCommand extends Command
 {
 
     /**
@@ -26,16 +27,19 @@ class DiscordBotCommand extends Command
     /**
      * Execute the console command.
      */
+
+
     public function handle(): void
     {
-        $available = (new API())->apiRequest("https://discord.com/api/v8/guilds/".env('DISCORD_BOT_GUILD'),
+        $available = (new API())->apiRequest("https://discord.com/api/v8/guilds/" . env('DISCORD_BOT_GUILD'),
             null,
             env('DISCORD_BOT_TOKEN'), 'Bot', true, 'GET');
         if (isset($available->message)) {
             var_dump('Not Good');
         } else {
             var_dump('Good');
+            app(Discord::class);
         }
-                new Discord();
+
     }
 }

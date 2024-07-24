@@ -26,12 +26,12 @@ class DiscordService
 
     //Token request required data
     protected array $tokenData = [
-        'client_id'     => null,
+        'client_id' => null,
         'client_secret' => null,
-        'grant_type'    => 'authorization_code',
-        'code'          => null,
-        'redirect_uri'  => null,
-        'scope'         => null,
+        'grant_type' => 'authorization_code',
+        'code' => '',
+        'redirect_uri' => null,
+        'scope' => null,
     ];
 
     //User service constructor
@@ -45,6 +45,7 @@ class DiscordService
         $this->tokenData['client_id'] = config('discord.client_id');
         $this->tokenData['client_secret'] = config('discord.client_secret');
         $this->tokenData['scope'] = config('discord.scopes');
+        $this->tokenData['redirect_uri'] = config('discord.redirect_uri');
         $this->api = new API();
         $this->discord = new DiscordAPI();
         $this->guild_id = env('DISCORD_BOT_GUILD');
@@ -70,11 +71,19 @@ class DiscordService
         return $this->discordRepository->login($authUser);
     }
 
+
+    public function getTokens(): AccessToken
+    {
+        $tokens = $this->api->apiRequest($this->tokenURL, $this->tokenData);
+        return new AccessToken($tokens);
+
+    }
+
     public function auth()
     {
         try {
-            $tokens = $this->api->apiRequest($this->tokenURL, $this->tokenData);
-            $this->tokens = new AccessToken($tokens);
+
+            $this->tokens = $this->getTokens();
             $userData = $this->discord->getUser($this->tokens->getToken());
 
             if ($userData->id) {
@@ -112,7 +121,7 @@ class DiscordService
     {
         $playerA = [];
 
-        if ( !$this->checkForOnlinePlayer($request)) {
+        if (!$this->checkForOnlinePlayer($request)) {
             return response()->json([
                 'player' => false
             ]);

@@ -27,7 +27,7 @@ use Discord\Parts\User\Member;
 use Illuminate\Support\Facades\File;
 
 
-class RedeemCode extends DiscordMessage implements Feature
+class RedeemCode extends DiscordMessage
 {
 
 
@@ -35,10 +35,11 @@ class RedeemCode extends DiscordMessage implements Feature
     public DiscordPHP $discord;
     public DiscordPHP $client;
 
-    public function __construct(DiscordPHP $discord, DiscordPHP $client)
+    public function __construct(DiscordPHP $discord, DiscordPHP $client, Api $api)
     {
+
         parent::__construct($discord);
-        $this->api = new API();
+        $this->api = $api;
         $this->discord = $discord;
         $this->client = $client;
         $this->handle();
@@ -265,7 +266,7 @@ class RedeemCode extends DiscordMessage implements Feature
         }
 
 
-        return $this->embed($this->discord, $fields, 'Redeem Code Details');
+        return $this->embed($fields, 'Redeem Code Details');
     }
 
     private function create(In $interaction)
@@ -429,7 +430,7 @@ class RedeemCode extends DiscordMessage implements Feature
 
                 $request->save();
 
-                $embed = $this->embed($this->discord, $fields, 'Chosen ' . $type);
+                $embed = $this->embed($fields, 'Chosen ' . $type);
                 $builder = MessageBuilder::new()->addEmbed($embed);
                 $ar = ActionRow::new();
 
@@ -528,7 +529,7 @@ class RedeemCode extends DiscordMessage implements Feature
         !is_null($redeem) && $redeem->delete();
         !is_null($request) && $request->delete();
 
-        $embed = $this->embed($this->discord, [], 'Redeem Deleted');
+        $embed = $this->embed([], 'Redeem Deleted');
         $interaction->deleteFollowUpMessage($interaction->message->id);
         $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed), true);
 

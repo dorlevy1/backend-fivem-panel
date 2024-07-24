@@ -15,12 +15,12 @@ use Discord\Discord;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Interaction as In;
 
-#[AllowDynamicProperties] class DiscordMessage extends Message
+#[AllowDynamicProperties] class DiscordMessage
 {
 
     public function __construct(Discord $client)
     {
-        parent::__construct();
+
         $this->client = $client;
     }
 
@@ -28,6 +28,7 @@ use Discord\Parts\Interactions\Interaction as In;
     protected function messageSummaryRequest(In $interaction, $discord = null)
     {
         $request = GangCreationRequest::where('discord_id', '=', $discord ?? $interaction->user->id)->first();
+
         $guild = $this->discord->guilds->get('id', env('DISCORD_BOT_GUILD'));
 
         if (!isset($request->boss) || !isset($request->co_boss)) {
@@ -37,8 +38,6 @@ use Discord\Parts\Interactions\Interaction as In;
         $text = '';
         $rolesBoss = $guild->members->get('id', $request->boss)->roles;
         $rolesCo = $guild->members->get('id', $request->co_boss)->roles;
-        $exists = array_key_exists(1192227507508871349, $rolesBoss->toArray()) ? ' ' . '✅' : ' ' . '❌';
-        $existsCo = array_key_exists(1192227507508871349, $rolesCo->toArray()) ? ' ' . '✅' : ' ' . '❌';
 
         $boss = Player::all()->first(function ($player) use ($request) {
             return $player->metadata->discord === 'discord:' . $request->boss;
@@ -48,11 +47,15 @@ use Discord\Parts\Interactions\Interaction as In;
             return $player->metadata->discord === 'discord:' . $request->boss;
         });
 
+        $exists = $boss ? ' ' . '✅' : ' ' . '❌';
+        $existsCo = $coboss ? ' ' . '✅' : ' ' . '❌';
+
+
         $text .= "Boss -  <@{$request->boss}>";
-        $text .= $boss ? "**CID**: {$boss->citizenid} {$exists} \n\n" : "{$exists} (Also Doesn't Have Player In City) \n\n";
+        $text .= $boss ? "**CID**: {$boss->citizenid} {$exists} \n\n" : "{$exists} (Doesn't have player or criminal profile) \n\n";
 
         $text .= "Co Boss -  <@{$request->co_boss}>";
-        $text .= $coboss ? "**CID**: {$coboss->citizenid} {$existsCo} \n\n" : "{$existsCo} (Also Doesn't Have Player In City) \n\n";
+        $text .= $coboss ? "**CID**: {$coboss->citizenid} {$existsCo} \n\n" : "{$existsCo} (Doesn't have player or criminal profile) \n\n";
 
 
         foreach (explode(',', $request->members) as $key => $member) {
@@ -70,9 +73,9 @@ use Discord\Parts\Interactions\Interaction as In;
 
             $exists = $roleExists && $player ? ' ' . '✅' : ' ' . '❌';
             $text .= "Member No.{$key} -  <@{$member}> ";
-            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Doesn't Have Player In City) \n\n";
+            $text .= $player ? "**CID**: {$player->citizenid} {$exists} \n\n" : "{$exists} (Doesn't have player or criminal profile) \n\n";
         }
-        $embed = $this->createSummaryRequestEmbed($this->client, $interaction, $text, empty($talkTo), $talkTo, $discord);
+        $embed = $this->createSummaryRequestEmbed($interaction, $text, empty($talkTo), $talkTo, $discord);
 
 
         return MessageBuilder::new()->addEmbed($embed);
@@ -96,12 +99,11 @@ use Discord\Parts\Interactions\Interaction as In;
     }
 
     public function createSummaryRequestEmbed(
-        Discord $client,
-        In      $interaction,
-                $text,
-                $readyForRequest,
-                $talkTo,
-                $discord = null
+        In $interaction,
+           $text,
+           $readyForRequest,
+           $talkTo,
+           $discord = null
     ): \Discord\Parts\Part|\Discord\Repository\AbstractRepository
     {
         $fields = [
@@ -116,7 +118,7 @@ use Discord\Parts\Interactions\Interaction as In;
             'value' => "you have one or more members that\ndoes not have Allowlist Role.\nTalk to {$talkTo} soon as possible and update the Request\n\nAfter those members get the Allowlist Role.\nClick on the button"
         ];
 
-        return $this->embed($client, $fields, 'Gang Request');
+        return $this->embed($fields, 'Gang Request');
     }
 
     public static function message($data): bool
@@ -135,10 +137,11 @@ use Discord\Parts\Interactions\Interaction as In;
         return true;
     }
 
-    public function embed(Discord $discord, $fields, $title)
+
+    public function embed($fields, $title)
     {
 
-        $embed = $discord->factory(Embed::class);
+        $embed = $this->client->factory(Embed::class);
         if (!empty($fields)) {
             $embed->addField(...$fields);
         }

@@ -17,26 +17,34 @@ use Illuminate\Http\Request;
 use Discord\Parts\Interactions\Interaction as In;
 use Discord\Discord as DiscordPHP;
 
-class Interaction extends DiscordMessage
+class Interaction
 {
 
     /**
      * @throws \Exception
      */
-    public function __construct(DiscordPHP $client, DiscordPHP $discord, In $interaction)
+
+    private DiscordPHP $discord;
+    protected $interaction;
+
+    public function __construct(DiscordPHP $discord, In $interaction)
     {
-        parent::__construct($client);
         $name = explode('+', $interaction->data->custom_id)[0];
 
         $this->discord = $discord;
-        $this->client = $client;
-
+        $this->interaction = null;
         return match ($name) {
             InteractionEnum::CANCEL_BAN->value => $this->cancel_ban($interaction),
             InteractionEnum::ADD_BAN->value => $this->add_ban($interaction),
             default => true,
         };
 
+    }
+
+
+    public function setInteraction(In $interaction)
+    {
+        $this->interaction = $interaction;
     }
 
     public function removeMessage($channel_id, $message_id)
@@ -62,7 +70,7 @@ class Interaction extends DiscordMessage
         $timenoew = date('Y-m-d h:i:s');
         $fields = [
             [
-                'name'  => 'Ban Removal Details',
+                'name' => 'Ban Removal Details',
                 'value' => "**Action By:** <@{$adminDiscordId}>\n**Player:** <@{$playerDiscordId}>\n**Ban Until:** ||{$time}||\n**Reason:** ||{$ban->reason}||\n**Cancellation Date:** ||{$timenoew}||"
             ],
         ];
@@ -71,8 +79,8 @@ class Interaction extends DiscordMessage
             $reply);
         $this->message([
             'playerDiscordId' => $playerDiscordId,
-            'adminDiscordId'  => $adminDiscordId,
-            'fields'          => $fields
+            'adminDiscordId' => $adminDiscordId,
+            'fields' => $fields
         ]);
         $ban->delete();
 
@@ -83,7 +91,7 @@ class Interaction extends DiscordMessage
         foreach ($interaction->member->roles as $role) {
             if (strtolower($role->name) === 'bans' || strtolower($role->name) === 'god') {
                 $admin = Admin::where('discord_id', '=', $interaction['member']['user']->id)->first();
-                if ( !is_null($admin)) {
+                if (!is_null($admin)) {
                     return true;
                 }
             }
@@ -100,10 +108,10 @@ class Interaction extends DiscordMessage
             if (is_null($ban)) {
                 $this->createMessage([
                     'adminDiscordId' => $interaction->user->id,
-                    'title'          => "No Access Removed Ban",
-                    'description'    => "<@{$interaction->user->id}> Tried To Remove Ban Which Not Exists",
-                    'webhook'        => 'dlp-bans',
-                    'reply'          => $interaction->message->id
+                    'title' => "No Access Removed Ban",
+                    'description' => "<@{$interaction->user->id}> Tried To Remove Ban Which Not Exists",
+                    'webhook' => 'dlp-bans',
+                    'reply' => $interaction->message->id
                 ]);
                 $interaction->acknowledge();
 
@@ -117,10 +125,10 @@ class Interaction extends DiscordMessage
         } else {
             $this->createMessage([
                 'adminDiscordId' => $interaction->user->id,
-                'title'          => "No Access For Bans",
-                'description'    => "<@{$interaction->user->id}> Tried To Remove Ban For <@{$discord_id_ban}>",
-                'webhook'        => 'dlp-bans',
-                'reply'          => $interaction->message->id
+                'title' => "No Access For Bans",
+                'description' => "<@{$interaction->user->id}> Tried To Remove Ban For <@{$discord_id_ban}>",
+                'webhook' => 'dlp-bans',
+                'reply' => $interaction->message->id
             ]);
             $interaction->acknowledge();
 
@@ -137,12 +145,12 @@ class Interaction extends DiscordMessage
         $reason = explode('+', $interaction['data']['custom_id'])[2];
         if ($this->getPermissions($interaction)) {
             $ban = Ban::where('discord', 'LIKE', '%' . $discord_id_ban . '%')->first();
-            if ( !is_null($ban)) {
+            if (!is_null($ban)) {
                 $this->createMessage([
                     'adminDiscordId' => $interaction['member']['user']->id,
-                    'title'          => "No Access Removed Ban",
-                    'description'    => "<@{$interaction['member']['user']->id}> Tried To Remove Ban Which Already Exists\nTo <@{$discord_id_ban}>",
-                    'webhook'        => 'bans',
+                    'title' => "No Access Removed Ban",
+                    'description' => "<@{$interaction['member']['user']->id}> Tried To Remove Ban Which Already Exists\nTo <@{$discord_id_ban}>",
+                    'webhook' => 'bans',
                     //                    'reply'          => $interaction['message']['id']
                 ]);
                 $this->removeMessage(Webhook::where('name', '=', 'warns')->first()->channel_id,
@@ -158,28 +166,28 @@ class Interaction extends DiscordMessage
                     foreach (Player::all() as $player) {
                         if ($player->metadata->discord === 'discord:' . $discord_id_ban) {
                             Ban::create([
-                                'discord'  => $player->metadata->discord,
-                                'license'  => strval($player->license),
-                                'name'     => $player->name,
-                                'ip'       => (new Request())->ip(),
-                                'reason'   => $reason,
-                                'expire'   => $dateUnbtil->timestamp,
+                                'discord' => $player->metadata->discord,
+                                'license' => strval($player->license),
+                                'name' => $player->name,
+                                'ip' => (new Request())->ip(),
+                                'reason' => $reason,
+                                'expire' => $dateUnbtil->timestamp,
                                 'bannedby' => $interaction['member']['user']['username']
                             ]);
                             $fields = [
                                 [
-                                    'name'  => 'Ban Details',
+                                    'name' => 'Ban Details',
                                     'value' => "**Action By:** <@{$interaction['member']['user']->id}>\n**Player:** <@{$discord_id_ban}>\n**Ban Until:** ||{$dateUnbtil}||\n**Reason:** ||{$reason}||"
                                 ],
                             ];
                             $components['components'] = [
                                 [
-                                    "type"       => 1,
+                                    "type" => 1,
                                     "components" => [
                                         [
-                                            "type"      => 2,
-                                            "label"     => "Click To Cancel Ban.",
-                                            "style"     => 1,
+                                            "type" => 2,
+                                            "label" => "Click To Cancel Ban.",
+                                            "style" => 1,
                                             "custom_id" => "cancel_ban+" . $discord_id_ban
                                         ]
                                     ]
@@ -188,11 +196,11 @@ class Interaction extends DiscordMessage
 
                             $this->createMessage([
                                 'adminDiscordId' => $interaction['member']['user']->id,
-                                'title'          => 'Ban Added',
-                                'description'    => "<@{$interaction['member']['user']->id}> Give Ban To <@{$discord_id_ban}>!",
-                                'webhook'        => "bans",
-                                'fields'         => $fields,
-                                'components'     => $components,
+                                'title' => 'Ban Added',
+                                'description' => "<@{$interaction['member']['user']->id}> Give Ban To <@{$discord_id_ban}>!",
+                                'webhook' => "bans",
+                                'fields' => $fields,
+                                'components' => $components,
 
                             ]);
                             $this->removeMessage(Webhook::where('name', '=', 'warns')->first()->channel_id,
@@ -210,10 +218,10 @@ class Interaction extends DiscordMessage
         } else {
             $this->createMessage([
                 'adminDiscordId' => $interaction['member']['user']->id,
-                'title'          => "No Access For Bans",
-                'description'    => "<@{$interaction['member']['user']->id}> Tried To Remove Ban For <@{$discord_id_ban}>",
-                'webhook'        => 'bans',
-                'reply'          => $interaction['message']['id']
+                'title' => "No Access For Bans",
+                'description' => "<@{$interaction['member']['user']->id}> Tried To Remove Ban For <@{$discord_id_ban}>",
+                'webhook' => 'bans',
+                'reply' => $interaction['message']['id']
             ]);
             $interaction->acknowledge();
 

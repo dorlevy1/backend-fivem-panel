@@ -5,7 +5,6 @@ namespace App\Repositories;
 
 use AllowDynamicProperties;
 use App\Events\DatabaseChange;
-use App\Helpers\Discord\DiscordMessage;
 use App\Message;
 use App\Models\Ban;
 use App\Models\Player;

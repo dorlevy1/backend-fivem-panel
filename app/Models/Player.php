@@ -15,6 +15,7 @@ class Player extends Model
 
     protected $connection = 'second_db';
 
+    protected $guarded = ['id'];
 
     //    protected static function boot(): void
     //    {
@@ -23,6 +24,9 @@ class Player extends Model
     //        //Any time this model is used, it will implement the StringifyGuidRule
     ////        static::addGlobalScope(new StringifyScope());
     //    }
+
+    const UPDATED_AT = NULL;
+    const CREATED_AT = NULL;
 
     public function inventory(): Attribute
     {
@@ -52,9 +56,10 @@ class Player extends Model
     public function gang(): Attribute
     {
         return new Attribute(
-            get: function ($gang) {
-                return json_decode($gang);
-            });
+            get: fn($gang) => json_decode($gang),
+            set: fn($gang) => json_encode($gang)
+        );
+
     }
 
     public function skillsinfo(): Attribute
@@ -104,12 +109,15 @@ class Player extends Model
     public function scopeGetData(Builder $query, $discord)
     {
         return $query->where('discord', '=', 'discord:' . $discord)->get()->first();
+    }
 
+    public function organization()
+    {
+        return $this->hasOne(Gang::class, 'owner', 'citizenid');
     }
 
     public function criminal()
     {
-        return $this->belongsTo(Criminal::class, 'citizenid', 'citizenid');
+        return $this->hasOne(Criminal::class, 'identifier', 'citizenid');
     }
-
 }
